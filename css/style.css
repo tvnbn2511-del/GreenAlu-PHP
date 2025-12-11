@@ -1,0 +1,632 @@
+/* Reset cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Biến màu sắc */
+:root {
+    --primary-color: #007bff;
+    --primary-color-hover: #0056b3;
+    --success-color: #28a745;
+    --success-color-hover: #1e7e34;
+    --warning-color: #ffc107;
+    --warning-color-hover: #e0a800;
+    --text-color-dark: #333;
+    --text-color-light: #fff;
+    --text-color-muted: #555; /* Màu cho label, chữ phụ */
+    --border-color: #ccc;
+    --background-light: #f4f7f6;
+    --background-white: #fff;
+    --table-header-bg: #e9ecef;
+    --table-row-even-bg: #f8f9fa;
+    --table-row-hover-bg: #e2e6ea;
+    --danger-color: red;
+    --instock-color: green;
+
+    /* Font weight */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500; /* Hơi đậm hơn normal */
+    --font-weight-semibold: 600; /* Đậm vừa */
+    --font-weight-bold: 700; /* Đậm truyền thống */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    background-color: var(--background-light);
+    color: var(--text-color-dark);
+    padding: 20px;
+    font-weight: var(--font-weight-normal); /* Độ đậm mặc định cho body */
+}
+
+.container {
+    max-width: 1300px;
+    margin: auto;
+    background-color: var(--background-white);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+/* === GIAO DIỆN HEADER VÀ TAB MỚI (ĐÃ SỬA THEO YÊU CẦU) === */
+header.header-with-tabs {
+    display: block; /* Bắt buộc hiển thị dạng block (2 dòng) */
+    text-align: left; /* Căn trái toàn bộ nội dung header */
+    margin-bottom: 25px;
+    
+    /* Yêu cầu "Đóng khung": */
+    border: 1px solid var(--border-color); /* Thay border-bottom bằng border bao quanh */
+    padding: 20px; /* Thêm padding cho đẹp */
+    border-radius: 8px; /* Bo góc cho khung */
+}
+
+.header-left h1 {
+    color: var(--primary-color);
+    font-size: 2em;
+    font-weight: var(--font-weight-semibold);
+    margin: 0; 
+    margin-bottom: 15px; /* Thêm khoảng cách giữa Logo và Tab */
+}
+
+.header-left h1 i {
+    margin-right: 10px;
+}
+
+.tabs-container {
+    display: flex;
+    flex-wrap: wrap; /* Cho phép tab xuống dòng nếu không đủ chỗ */
+    gap: 10px;
+    /* Căn lề trái cho container tab (vì text-align: left đã có ở header) */
+}
+
+.tab-link {
+    padding: 12px 20px;
+    font-size: 1.1em;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    border-bottom: 2px solid transparent; 
+    transition: all 0.3s ease;
+}
+.tab-link i {
+    margin-right: 8px;
+}
+
+.tab-link:hover {
+    background-color: #f0f0f0;
+    color: var(--primary-color-hover);
+}
+
+.tab-link.active {
+    color: var(--primary-color);
+    background-color: #e7f3ff;
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Style cho các Khung nội dung Tab */
+.tab-pane {
+    display: none; /* Mặc định ẩn tất cả */
+}
+.tab-pane.active {
+    display: block; /* Chỉ hiện tab có class 'active' */
+}
+/* === KẾT THÚC GIAO DIỆN TAB === */
+
+
+/* === XÓA HEADER CŨ GÂY XUNG ĐỘT ===
+header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--primary-color);
+}
+header h1 {
+    color: var(--primary-color);
+    font-size: 2em;
+    font-weight: var(--font-weight-semibold);
+}
+header h1 i {
+    margin-right: 10px;
+}
+*/
+/* ================================== */
+
+
+h2, h3 {
+    color: var(--text-color-dark);
+    margin-bottom: 15px;
+    font-weight: var(--font-weight-medium); 
+}
+
+h2 i, h3 i {
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+.controls-section, .data-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 6px;
+    font-weight: var(--font-weight-medium); 
+    color: var(--text-color-muted);
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-weight: var(--font-weight-normal); 
+}
+
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 0.1rem rgba(0,123,255,.25);
+}
+
+.select-with-button {
+    display: flex;
+    align-items: center;
+}
+
+.select-with-button select {
+    flex-grow: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    height: calc(0.95em * 1.6 + 28px + 2px); 
+}
+
+.select-with-button button {
+    padding: 10px;
+    border: 1px solid var(--primary-color);
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+    border-left: none;
+    cursor: pointer;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(0.95em * 1.6 + 28px + 2px);
+}
+.select-with-button button:hover {
+    background-color: var(--primary-color-hover);
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: nowrap; 
+    gap: 10px;
+    margin-top: 20px;
+    align-items: center; 
+}
+
+.action-buttons button {
+    padding:15px 10px; 
+    color: var(--text-color-light);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: var(--font-weight-medium);
+    transition: background-color 0.2s ease-in-out;
+    white-space: nowrap; 
+}
+
+.action-buttons button i {
+    margin-right: 4px;
+}
+
+.action-buttons button {
+    background-color: var(--primary-color);
+}
+.action-buttons button:hover {
+    background-color: var(--primary-color-hover);
+}
+
+.action-buttons button#btn-timkiem { background-color: var(--primary-color); }
+.action-buttons button#btn-timkiem:hover { background-color: var(--primary-color-hover); }
+.action-buttons button#btn-nhaphang-modal { background-color: var(--primary-color); }
+.action-buttons button#btn-nhaphang-modal:hover { background-color: var(--primary-color-hover); }
+.action-buttons button#btn-xuathang { background-color: var(--success-color); }
+.action-buttons button#btn-xuathang:hover { background-color: var(--success-color-hover); }
+.action-buttons button#btn-intem { background-color: var(--warning-color); color: var(--text-color-dark);}
+.action-buttons button#btn-intem:hover { background-color: var(--warning-color-hover); }
+
+
+.total-weight-display {
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background-color: var(--table-header-bg);
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: right;
+    font-size: 1.1em;
+    font-weight: var(--font-weight-normal); 
+}
+
+#total-selected-weight {
+    color: var(--primary-color);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
+    font-weight: var(--font-weight-normal);
+}
+
+th {
+    background-color: var(--table-header-bg);
+    font-weight: var(--font-weight-semibold); 
+    color: #495057;
+    white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+    background-color: var(--table-row-even-bg);
+}
+tbody tr:hover {
+    background-color: var(--table-row-hover-bg);
+}
+
+td.no-data {
+    text-align: center;
+    font-style: italic;
+    color: #777;
+    padding: 20px;
+}
+
+.modal {
+    display: none; position: fixed; z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    overflow: auto; background-color: rgba(0, 0, 0, 0.6);
+}
+.modal-content {
+    background-color: var(--background-white); margin: 5% auto; padding: 25px;
+    border: 1px solid #ddd; border-radius: 5px; width: 90%;
+    max-width: 500px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,.3);
+}
+.modal-content.modal-lg { max-width: 850px; }
+
+.close-button {
+    color: #aaa; float: right; font-size: 32px;
+    font-weight: var(--font-weight-bold); cursor: pointer;
+    line-height: 1; padding: 0 5px;
+}
+.close-button:hover, .close-button:focus {
+    color: var(--text-color-dark); text-decoration: none;
+}
+
+.modal-form-group {
+    margin-bottom: 15px; display: flex; flex-direction: column;
+}
+.modal-form-group label {
+    margin-bottom: 5px; font-weight: var(--font-weight-medium); color: var(--text-color-muted);
+}
+.modal-form-group input[type="number"],
+.modal-form-group select {
+    padding: 10px; border: 1px solid var(--border-color);
+    border-radius: 4px; font-size: 0.95em; width: 100%;
+}
+.modal-form-group input[type="number"] {
+    max-width: 200px; 
+}
+
+
+#form-nhap-khoiluong {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px 20px; max-height: 400px; overflow-y: auto;
+    padding: 10px 5px 10px 0; margin-bottom: 20px;
+    border-top: 1px solid #eee; border-bottom: 1px solid #eee;
+    padding-top: 20px;
+}
+#form-nhap-khoiluong .kien-item { display: flex; flex-direction: column; }
+#form-nhap-khoiluong .kien-item label {
+    font-weight: var(--font-weight-normal); margin-bottom: 5px; font-size: 0.9em;
+}
+#form-nhap-khoiluong .kien-item input[type="number"] {
+    width: 100%; padding: 8px; border: 1px solid var(--border-color);
+    border-radius: 4px; font-size: 0.9em;
+}
+
+.status-ton_kho { color: var(--instock-color); font-weight: var(--font-weight-semibold); }
+.status-da_xuat { color: var(--danger-color); font-style: italic; font-weight: var(--font-weight-normal); }
+
+input[type="date"] {
+    position: relative;
+}
+input[type="date"]::before {
+    content: "dd/mm/yyyy";
+    position: absolute;
+    color: #999; 
+    left: 10px; 
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; 
+}
+input[type="date"]:focus::before,
+input[type="date"]:valid::before {
+    display: none;
+}
+
+
+#modal-chon-mau-tem .modal-content {
+    max-width: 450px;
+}
+#modal-chon-mau-tem #select-mau-tem {
+    margin-bottom: 20px;
+}
+
+td.lotno-clickable {
+    cursor: pointer;
+    color: var(--primary-color);
+    text-decoration: underline;
+    font-weight: var(--font-weight-medium);
+}
+td.lotno-clickable:hover {
+    color: var(--primary-color-hover);
+}
+
+td.lotno-edited {
+    color: var(--success-color);
+    font-weight: var(--font-weight-semibold);
+    cursor: help; 
+    position: relative; 
+}
+
+#modal-sua-kienhang .form-group small {
+    font-size: 0.8em;
+    color: #777;
+    margin-top: 3px;
+}
+#modal-sua-kienhang .form-group small span {
+    font-weight: var(--font-weight-medium);
+    color: #555;
+}
+
+/* CSS cho lưới thành phần (trong modal) */
+#thanhphan-grid-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 cột */
+    gap: 10px; /* Giảm khoảng cách */
+    margin-bottom: 15px; /* Giảm margin dưới */
+}
+
+.modal-form-group-small {
+    display: flex;
+    flex-direction: column; 
+}
+
+.modal-form-group-small label {
+    font-weight: var(--font-weight-medium); /* Giảm độ đậm */
+    margin-bottom: 3px;
+    font-size: 0.85em; /* Nhỏ hơn */
+    color: var(--text-color-muted);
+}
+
+.thanhphan-input {
+    width: 100%;
+    padding: 8px 5px; /* Giảm padding */
+    box-sizing: border-box; 
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9em; /* Nhỏ hơn */
+    text-align: center;
+}
+
+.thanhphan-header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+/* Ẩn các phần không cần thiết khi ở chế độ "Chỉ nhập thành phần" */
+#modal-nhap-khoiluong.composition-only .modal-form-group-kien-bat-dau,
+#modal-nhap-khoiluong.composition-only #form-nhap-khoiluong {
+    display: none;
+}
+
+/* Tooltip cho di chuột vào Lot No */
+#composition-tooltip {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    border-radius: 6px;
+    padding: 10px 15px;
+    z-index: 2000;
+    max-width: 350px;
+    pointer-events: none; /* Quan trọng */
+    font-size: 0.9em;
+}
+#composition-tooltip h4 {
+    margin: 0 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.1em;
+    color: var(--primary-color);
+}
+#composition-tooltip .tooltip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* 3 cột */
+    gap: 5px 10px;
+}
+#composition-tooltip .tooltip-grid div {
+    white-space: nowrap;
+}
+#composition-tooltip .tooltip-grid div strong {
+    color: var(--text-color-muted);
+}
+td.lotno-hover-trigger {
+    cursor: help;
+}
+
+/* === CSS CHO TRANG TONGQUAN.PHP (TRONG TAB) === */
+.back-link {
+    /* Không cần link này nữa vì đã dùng tab */
+    display: none; 
+}
+.summary-loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2em;
+    color: var(--text-color-muted);
+}
+.summary-loading i {
+    margin-right: 10px;
+}
+.error-msg {
+    color: var(--danger-color);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+    padding: 20px;
+}
+
+/* Grid cho các thẻ Tổng Hợp */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+.summary-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: var(--background-white);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.summary-card-header {
+    background-color: var(--table-header-bg);
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    margin: 0;
+    font-size: 1.3em;
+    color: var(--primary-color);
+}
+.summary-card-total {
+    padding: 15px 15px 10px 15px;
+    font-size: 1.15em;
+    border-bottom: 1px solid #f0f0f0;
+}
+.summary-card-total strong {
+    font-size: 1.2em;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-dark);
+}
+.summary-card-list {
+    list-style: none;
+    padding: 10px 15px 15px 15px;
+    margin: 0;
+}
+.summary-sub-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+}
+.summary-sub-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.summary-sub-item span {
+    color: var(--text-color-muted);
+}
+.summary-sub-item strong {
+    font-weight: var(--font-weight-medium);
+}
+
+/* Bảng chi tiết Lot (Trang tổng quan) */
+.lot-group-header {
+    font-size: 1.5em;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+}
+.lot-group-header:first-of-type {
+    margin-top: 0;
+}
+.lot-summary-table th {
+    /* CSS cho <thead> của bảng tổng hợp */
+    background-color: #f8f9fa;
+    font-weight: var(--font-weight-medium);
+}
+.lot-summary-table td.composition-cell {
+    font-size: 1em;
+    color: #333;
+    line-height: 1.5;
+    word-break: break-word; /* Cho phép xuống dòng nếu quá dài */
+}
+/* --- Tinh chỉnh thu gọn Form Nhập Liệu --- */
+
+/* 1. Giảm cỡ chữ của nhãn (label) */
+.controls-section .form-group label {
+    font-size: 13px;    /* Cỡ chữ nhỏ hơn một chút (gốc có thể là 14px-15px) */
+    margin-bottom: 4px; /* Giảm khoảng cách giữa nhãn và ô input */
+}
+
+/* 2. Giảm chiều cao và padding của tất cả các ô input và select */
+.controls-section .form-group input[type="text"],
+.controls-section .form-group input[type="date"],
+.controls-section .form-group input[type="number"],
+.controls-section .form-group select,
+.controls-section .select-with-button select {
+    padding: 6px 10px;  /* Giảm padding dọc (ví dụ: từ 10px xuống 6px) */
+    font-size: 14px;    /* Giảm cỡ chữ trong ô input */
+    height: 38px;       /* Đặt chiều cao cố định nhỏ hơn (ví dụ: từ 40px-42px xuống 38px) */
+}
+
+/* 3. Giảm chiều cao của nút '+' cho đồng bộ */
+.controls-section .select-with-button button {
+    height: 38px;       /* Chiều cao bằng với ô select */
+    width: 38px;        /* Chiều rộng bằng chiều cao */
+    font-size: 14px;    /* Giảm cỡ chữ icon '+' */
+}
+
+/* 4. Giảm khoảng cách giữa các ô */
+.controls-section .form-grid {
+    gap: 12px 15px; /* Giảm khoảng cách (dọc 12px, ngang 15px) */
+}
