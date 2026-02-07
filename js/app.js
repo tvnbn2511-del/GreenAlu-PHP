@@ -134,7 +134,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const originalKhoiluongSpan = document.getElementById('original-khoiluong');
     const originalNsxSpan = document.getElementById('original-nsx');
     const originalGhichuSpan = document.getElementById('original-ghichu');
-    
     let originalItemDataForEdit = {}; // Lưu dữ liệu gốc khi mở modal sửa
     window.cachedLoaiNhomOptions = []; // Cache options để dùng trong modal sửa
     window.cachedLoaiHangOptions = [];
@@ -525,10 +524,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- NHẬP HÀNG (Mở Modal Nhập Khối Lượng) ---
+   // =========================================================================
+    // === LOGIC MỚI: NHẬP HÀNG, GHÉP KIỆN & KIỆN LẺ (THAY THẾ CODE CŨ) ===
+    // =========================================================================
+
+    // --- 1. XỬ LÝ NÚT MỞ MODAL "NHẬP HÀNG" (Reset về chế độ nhập mới) ---
     if (btnNhaphangModal && modalKienBatdauInput && formNhapKhoiluong && soluongInput) {
-        let generateWeightInputsScoped = null; 
+        window.generateWeightInputsScoped = null; // Gán vào window để biến tồn tại toàn cục nếu cần
+
         btnNhaphangModal.addEventListener('click', () => {
+            // A. Lấy dữ liệu từ Form chính
             const lotno = lotnoInput.value.trim(); 
             const loainhomId = loainhomSelect.value;
             const loainhomText = loainhomSelect.options[loainhomSelect.selectedIndex]?.text || 'N/A';
@@ -537,45 +542,67 @@ document.addEventListener('DOMContentLoaded', function() {
             const nsx = nsxInput.value; 
             const soluongGoc = parseInt(soluongInput.value);
 
-            // Chế độ 1: Chỉ nhập Lot No (Chỉ nhập thành phần)
+            // B. RESET TRẠNG THÁI (Quan trọng: Xóa chế độ Ghép Kiện)
+            const inputMode = document.getElementById('nhap-hang-mode');
+            const inputOldIds = document.getElementById('ghep-kien-old-ids');
+            const inputKienLe = document.getElementById('modal-kien-le-input');
+            const modalTitle = document.getElementById('modal-nhaphang-title');
+
+            if (inputMode) inputMode.value = 'nhap_hang'; // Đặt về nhập hàng
+            if (inputOldIds) inputOldIds.value = '';       // Xóa ID cũ
+            if (inputKienLe) inputKienLe.value = '';       // Reset ô kiện lẻ
+            if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-weight-hanging"></i> Nhập Khối Lượng & Thành Phần';
+
+            // C. XỬ LÝ CÁC TRƯỜNG HỢP HIỂN THỊ
+            
+            // Trường hợp 1: Chỉ nhập Lot No (Chế độ Nhập/Sửa Thành Phần)
             if (lotno && !soluongGoc) { 
-                if (modalNhapHangTitle) modalNhapHangTitle.innerHTML = '<i class="fas fa-flask"></i> Nhập/Sửa Thành Phần Hóa Học';
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-flask"></i> Nhập/Sửa Thành Phần Hóa Học';
                 if (modalLotnoDisplay) modalLotnoDisplay.textContent = lotno;
                 if (modalLoainhomDisplay) modalLoainhomDisplay.textContent = 'N/A';
                 if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = 'N/A';
                 if (modalNsxDisplay) modalNsxDisplay.textContent = 'N/A';
                 
-                formNhapKhoiluong.innerHTML = ''; // Xóa form
-                modalNhapKhoiLuong.classList.add('composition-only'); // Thêm class để ẩn
+                formNhapKhoiluong.innerHTML = ''; // Xóa form nhập cân
+                modalNhapKhoiLuong.classList.add('composition-only'); // Ẩn phần nhập cân
                 
-                // TODO: Tải thành phần hiện tại của Lot No nếu có? (Nâng cao)
-                // Tạm thời reset
+                // Reset input thành phần về 0
                 document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
                 
                 showModal('modal-nhap-khoiluong');
-                return; // Dừng
+                return; 
             }
 
-            // Chế độ 2: Nhập hàng đầy đủ
+            // Trường hợp 2: Nhập hàng đầy đủ
             if (!lotno || !loainhomId || !loaihangId || !nsx || isNaN(soluongGoc) || soluongGoc <= 0) {
                 showCustomAlert('Vui lòng điền đầy đủ thông tin (Lot No, Loại Nhôm, Loại Hàng, NSX, Số Lượng Kiện) để nhập hàng.', 'error');
                 return;
             }
             
-            if (modalNhapHangTitle) modalNhapHangTitle.innerHTML = '<i class="fas fa-weight-hanging"></i> Nhập Khối Lượng & Thành Phần';
+            // Điền thông tin hiển thị lên Modal
             if (modalLotnoDisplay) modalLotnoDisplay.textContent = lotno;
             if (modalLoainhomDisplay) modalLoainhomDisplay.textContent = loainhomText;
             if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = loaihangText; 
-            if (modalNsxDisplay) { try { const d = new Date(nsx); modalNsxDisplay.textContent = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; } catch (e) { modalNsxDisplay.textContent = nsx; } }
+            if (modalNsxDisplay) { 
+                try { const d = new Date(nsx); modalNsxDisplay.textContent = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; } 
+                catch (e) { modalNsxDisplay.textContent = nsx; } 
+            }
             
-            modalNhapKhoiLuong.classList.remove('composition-only'); // Xóa class
+            modalNhapKhoiLuong.classList.remove('composition-only'); // Hiện phần nhập cân
             modalKienBatdauInput.value = '1'; 
             
-            generateWeightInputsScoped = function() { 
+            // Hàm sinh ô nhập liệu (Kiện 1, Kiện 2...)
+            window.generateWeightInputsScoped = function() { 
                 const kienBatDauVal = parseInt(modalKienBatdauInput.value); 
                 formNhapKhoiluong.innerHTML = '';
-                if (isNaN(soluongGoc) || soluongGoc <= 0) { formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số lượng kiện không hợp lệ.</p>'; return; }
-                if (isNaN(kienBatDauVal) || kienBatDauVal <= 0) { formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số kiện bắt đầu không hợp lệ.</p>'; return; }
+                
+                if (isNaN(soluongGoc) || soluongGoc <= 0) { 
+                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số lượng kiện không hợp lệ.</p>'; return; 
+                }
+                if (isNaN(kienBatDauVal) || kienBatDauVal <= 0) { 
+                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số kiện bắt đầu không hợp lệ.</p>'; return; 
+                }
+                
                 for (let i = 0; i < soluongGoc; i++) {
                     const kienSoFormatted = String(kienBatDauVal + i).padStart(2, '0');
                     const itemDiv = document.createElement('div'); itemDiv.classList.add('kien-item');
@@ -583,90 +610,193 @@ document.addEventListener('DOMContentLoaded', function() {
                     formNhapKhoiluong.appendChild(itemDiv);
                 }
             };
-            generateWeightInputsScoped(); 
-            modalKienBatdauInput.oninput = generateWeightInputsScoped; 
             
-            // Reset thành phần
+            window.generateWeightInputsScoped(); 
+            modalKienBatdauInput.oninput = window.generateWeightInputsScoped; 
+            
+            // Reset các ô thành phần về 0
             document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
             
             showModal('modal-nhap-khoiluong');
         });
     }
 
-    // --- XÁC NHẬN NHẬP HÀNG (Từ Modal Nhập Khối Lượng) ---
+    // --- 2. XỬ LÝ NÚT MỞ MODAL "GHÉP KIỆN" (Logic Mới) ---
+    const btnGhepKien = document.getElementById('btn-ghep-kien'); // Đảm bảo bạn đã thêm ID này ở file index.php
+    if (btnGhepKien && kienhangTbody) {
+        btnGhepKien.addEventListener('click', () => {
+            // A. Kiểm tra đã chọn kiện hàng nào chưa
+            const selectedIds = Array.from(kienhangTbody.querySelectorAll('.row-checkbox:checked')).map(cb => cb.dataset.id);
+            if (selectedIds.length === 0) {
+                showCustomAlert('Vui lòng chọn ít nhất một kiện hàng cũ để ghép.', 'warning');
+                return;
+            }
+
+            // B. Kiểm tra thông tin Lô Mới
+            const lotno = lotnoInput.value.trim(); 
+            const loainhomId = loainhomSelect.value;
+            const loainhomText = loainhomSelect.options[loainhomSelect.selectedIndex]?.text || 'N/A';
+            const loaihangId = loaihangSelectMain.value; 
+            const loaihangText = loaihangSelectMain.options[loaihangSelectMain.selectedIndex]?.text || 'N/A';
+            const nsx = nsxInput.value; 
+            const soluongGoc = parseInt(soluongInput.value);
+
+            if (!lotno || !loainhomId || !loaihangId || !nsx || isNaN(soluongGoc) || soluongGoc <= 0) {
+                showCustomAlert('Bạn cần điền thông tin cho LÔ HÀNG MỚI (Lot No, Loại Nhôm, NSX, Số Lượng) vào khung nhập liệu trước khi bấm Ghép Kiện.', 'warning');
+                return;
+            }
+
+            // C. CÀI ĐẶT TRẠNG THÁI "GHÉP KIỆN"
+            const inputMode = document.getElementById('nhap-hang-mode');
+            const inputOldIds = document.getElementById('ghep-kien-old-ids');
+            const inputKienLe = document.getElementById('modal-kien-le-input');
+            const modalTitle = document.getElementById('modal-nhaphang-title');
+
+            if (inputMode) inputMode.value = 'ghep_kien'; // Đặt chế độ ghép
+            if (inputOldIds) inputOldIds.value = JSON.stringify(selectedIds); // Lưu danh sách ID cũ
+            if (inputKienLe) inputKienLe.value = ''; // Reset kiện lẻ
+            if (modalTitle) modalTitle.innerHTML = `<i class="fas fa-random"></i> Ghép ${selectedIds.length} kiện cũ thành Lô Mới`;
+
+            // D. Hiển thị thông tin Lô Mới lên Modal
+            if (modalLotnoDisplay) modalLotnoDisplay.textContent = lotno + ' (MỚI)';
+            if (modalLoainhomDisplay) modalLoainhomDisplay.textContent = loainhomText;
+            if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = loaihangText;
+            if (modalNsxDisplay) modalNsxDisplay.textContent = nsx;
+
+            modalNhapKhoiLuong.classList.remove('composition-only');
+            modalKienBatdauInput.value = '1';
+
+            // E. Tái sử dụng hàm sinh ô nhập liệu
+            window.generateWeightInputsScoped = function() { 
+                const kienBatDauVal = parseInt(modalKienBatdauInput.value); 
+                formNhapKhoiluong.innerHTML = '';
+                for (let i = 0; i < soluongGoc; i++) {
+                    const kienSoFormatted = String(kienBatDauVal + i).padStart(2, '0');
+                    const itemDiv = document.createElement('div'); itemDiv.classList.add('kien-item');
+                    itemDiv.innerHTML = `<label for="kl-kien-${kienSoFormatted}">Kiện ${kienSoFormatted}:</label><input type="number" step="0.01" id="kl-kien-${kienSoFormatted}" data-kien-so="${kienSoFormatted}" placeholder="Nhập KL (Kg)" required>`;
+                    formNhapKhoiluong.appendChild(itemDiv);
+                }
+            };
+            window.generateWeightInputsScoped(); 
+            modalKienBatdauInput.oninput = window.generateWeightInputsScoped; 
+
+            // Reset thành phần
+            document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
+
+            showModal('modal-nhap-khoiluong');
+        });
+    }
+
+    // --- 3. XỬ LÝ NÚT "XÁC NHẬN" (Dùng chung cho cả Nhập Hàng và Ghép Kiện) ---
     if (btnXacnhanNhaphang && formNhapKhoiluong) {
         btnXacnhanNhaphang.addEventListener('click', () => {
-            const lotno = document.getElementById('lotno-input').value.trim(); 
+            // A. Lấy thông tin chung
+            const lotnoMain = document.getElementById('lotno-input').value.trim(); 
             const loainhomId = document.getElementById('loainhom-select').value;
             const loaihangId = document.getElementById('loaihang-select-main').value;
             const nsx = document.getElementById('nsx-input').value;
             
-            // === Thu thập dữ liệu thành phần (LUÔN LUÔN THU THẬP) ===
+            // Lấy chế độ hiện tại (nhap_hang hay ghep_kien)
+            const inputMode = document.getElementById('nhap-hang-mode');
+            const currentMode = inputMode ? inputMode.value : 'nhap_hang';
+            
+            // Lấy ID cũ nếu là ghép kiện
+            const inputOldIds = document.getElementById('ghep-kien-old-ids');
+            const oldIds = inputOldIds ? inputOldIds.value : '';
+
+            // B. Thu thập dữ liệu Thành Phần
             const compositionData = {};
             const inputsThanhPhan = document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input');
             inputsThanhPhan.forEach(input => {
                 const name = input.name; 
                 const value = parseFloat(input.value) || 0;
-                if (name) { 
-                    compositionData[name] = value;
-                }
+                if (name) compositionData[name] = value;
             });
             const thanhPhanJson = JSON.stringify(compositionData);
 
-            // === KIỂM TRA CHẾ ĐỘ ===
+            // C. Kiểm tra nếu là chế độ "Chỉ nhập thành phần"
             const isCompositionOnly = modalNhapKhoiLuong.classList.contains('composition-only');
-            
             const formData = new FormData();
-            formData.append('lotno', lotno);
+            formData.append('lotno', lotnoMain);
             formData.append('thanh_phan', thanhPhanJson);
 
             if (isCompositionOnly) {
-                // --- CHẾ ĐỘ 1: CHỈ LƯU THÀNH PHẦN ---
-                if (!lotno) {
-                    showCustomAlert('Vui lòng nhập Lot No.', 'error');
-                    return;
-                }
-                formData.append('action', 'luu_thanh_phan'); 
-                
+                if (!lotnoMain) { showCustomAlert('Vui lòng nhập Lot No.', 'error'); return; }
+                formData.append('action', 'luu_thanh_phan'); // Action riêng cho chỉ lưu thành phần
             } else {
-                // --- CHẾ ĐỘ 2: LƯU HÀNG ĐẦY ĐỦ ---
+                // --- CHẾ ĐỘ NHẬP HÀNG / GHÉP KIỆN ---
                 const dsKhoiLuong = []; 
                 const inputFields = formNhapKhoiluong.querySelectorAll('input[type="number"]');
                 let isValid = true;
                 
-                if (inputFields.length === 0) { showCustomAlert('Không có thông tin kiện hàng để nhập.', 'error'); return; }
+                // 1. Thu thập các kiện thường
+                if (inputFields.length > 0) {
+                    inputFields.forEach(input => {
+                        if (!isValid) return; 
+                        const kienSo = input.dataset.kienSo; 
+                        const khoiLuong = parseFloat(input.value);
+                        if (isNaN(khoiLuong) || khoiLuong <= 0) { 
+                            showCustomAlert(`Khối lượng kiện ${kienSo} không hợp lệ.`, 'error'); 
+                            input.focus(); 
+                            isValid = false; 
+                        } else { 
+                            dsKhoiLuong.push({ kien_so: kienSo, khoi_luong: khoiLuong }); 
+                        }
+                    });
+                }
                 
-                inputFields.forEach(input => {
-                    if (!isValid) return; 
-                    const kienSo = input.dataset.kienSo; const khoiLuong = parseFloat(input.value);
-                    if (isNaN(khoiLuong) || khoiLuong <= 0) { showCustomAlert(`Khối lượng kiện ${kienSo} không hợp lệ.`, 'error'); input.focus(); isValid = false; } 
-                    else { dsKhoiLuong.push({ kien_so: kienSo, khoi_luong: khoiLuong }); }
-                });
-                if (!isValid) return;
-                if (dsKhoiLuong.length === 0 && inputFields.length > 0 ) { showCustomAlert('Vui lòng nhập khối lượng hợp lệ cho các kiện.', 'error'); return; }
+                // 2. Thu thập Kiện Lẻ (Logic Đảo Thông Tin)
+                const inputKienLe = document.getElementById('modal-kien-le-input');
+                if (inputKienLe && inputKienLe.value) {
+                    const klKienLe = parseFloat(inputKienLe.value);
+                    if (klKienLe > 0) {
+                        dsKhoiLuong.push({
+                            khoi_luong: klKienLe,
+                            override_lot_no: 'Kiện Lẻ',  // Ghi đè Lot No thành 'Kiện Lẻ'
+                            override_kien_so: lotnoMain  // Ghi đè Kiện số thành tên Lot No chính
+                        });
+                    }
+                }
 
-                // Thêm các trường còn lại
-                formData.append('action', 'nhap_hang');
+                if (!isValid) return;
+                if (dsKhoiLuong.length === 0) { 
+                    showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng hoặc kiện lẻ.', 'error'); 
+                    return; 
+                }
+
+                // 3. Đóng gói dữ liệu gửi đi
+                // Quyết định action dựa trên mode
+                if (currentMode === 'ghep_kien') {
+                    formData.append('action', 'ghep_kien');
+                    formData.append('old_ids', oldIds); // Gửi kèm danh sách ID cũ cần xóa
+                } else {
+                    formData.append('action', 'nhap_hang');
+                }
+
                 formData.append('loai_nhom_id', loainhomId); 
                 formData.append('loai_hang_id', loaihangId);
                 formData.append('nsx', nsx); 
                 formData.append('ds_khoi_luong', JSON.stringify(dsKhoiLuong));
             }
             
-            // --- GỬI FETCH (Dùng chung cho cả 2 chế độ) ---
+            // D. Gửi AJAX
             fetch(AJAX_URL, { method: 'POST', body: formData })
-                .then(response => handleFetchJsonResponse(response, "xác nhận nhập hàng/thành phần"))
+                .then(response => handleFetchJsonResponse(response, currentMode === 'ghep_kien' ? "ghép kiện" : "nhập hàng"))
                 .then(data => {
                     showCustomAlert(data.message || (data.success ? 'Thành công' : 'Lỗi'), data.success ? 'success' : 'error');
                     if (data.success) { 
                         closeModal('modal-nhap-khoiluong'); 
-                        if (btnTimkiem) btnTimkiem.click(); else loadInitialData(); 
-                        if (soluongInput) soluongInput.value = ''; // Reset số lượng kiện
+                        if (btnTimkiem) btnTimkiem.click(); else loadInitialData(); // Load lại bảng
+                        if (soluongInput) soluongInput.value = ''; // Reset ô số lượng
                     }
                 })
                 .catch(error => { showCustomAlert('Lỗi AJAX: ' + error.message, 'error'); });
         });
     }
+
+    // =========================================================================
+    // === KẾT THÚC LOGIC MỚI ===
+    // =========================================================================
     
     // --- XUẤT HÀNG (Cập nhật DB + Xuất Excel) ---
     if (btnXuathang && kienhangTbody) {
@@ -818,6 +948,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     else if (mauTem === 'mau4_A5') { 
                         generateAndPrintHtmlForTem4(data.items, data.thanh_phan); // Sửa ở đây
                     }
+                    else if (mauTem === 'mau5') { 
+                    // Truyền data.items và data.thanh_phan (nếu tem cần hiện thành phần hóa học)
+                    generateAndPrintHtmlForTem5(data.items, data.thanh_phan); 
+                    }
+                    else if (mauTem === 'mau6') { generateAndPrintHtmlForTem6(data.items); }
                 } else { showCustomAlert('Lỗi lấy dữ liệu in: ' + (data.message || 'Không có dữ liệu'), 'error'); }
             })
             .catch(error => { showCustomAlert(error.message, 'error'); });
@@ -895,8 +1030,8 @@ document.addEventListener('DOMContentLoaded', function() {
         else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
     } // Đóng hàm generateAndPrintHtmlForTem1
 
-    function generateAndPrintHtmlForTem2(itemsData) {
-        let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 2</title><style>
+   function generateAndPrintHtmlForTem2(itemsData) {
+    let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 2</title><style>
         @page {
             size: A4 portrait;
             margin: 10mm;
@@ -925,76 +1060,132 @@ document.addEventListener('DOMContentLoaded', function() {
         .label-item {
             width: 93mm; 
             height: 65mm; 
-            border: 0.5px solid #666 !important; /* Thêm !important */
-            padding: 3mm 4mm; 
+            border: 0.5px solid #666 !important;
+            padding: 2mm 3mm; 
             box-sizing: border-box;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; 
-            font-size: 9pt; 
+            justify-content: flex-start; /* Dồn lên trên */
         }
-        .label-item .model,
-        .label-item .lot-no,
-        .label-item .bundle-no,
-        .label-item .so-thoi,
-        .label-item .net-weight,
-        .label-item .ngay-sx {
-            font-size: 15pt; 
-            border-bottom: 1px solid #333 !important; /* Thêm !important */
-            padding-bottom: 1mm; 
-            margin-bottom: 1.5mm; 
-            line-height: 1.2; 
+
+        /* --- CẤU TRÚC DÒNG (FLEXBOX) --- */
+        /* Class chung cho tất cả các dòng để chúng thẳng hàng nhau */
+        .row-item {
+            display: flex;              /* Kích hoạt chế độ chia cột */
+            align-items: flex-end;      /* Căn đáy chữ cho đẹp */
+            border-bottom: 1px solid #333 !important;
+            padding-bottom: 2.5px;  
+            margin-bottom: 3.5mm;
+            width: 100%;
         }
-        .label-item .model { margin-bottom: 2mm; }
-        .label-item .ngay-sx { margin-bottom: 0; }
-        .label-item .label-title {
-            display: inline-block;
-            width: 100px; 
+        
+        /* Riêng dòng NSX cuối cùng không cần gạch chân */
+        .row-item.last-row {
+            border-bottom: none !important;
+            margin-bottom: 0;
+        }
+
+        /* --- CỘT TIÊU ĐỀ (BÊN TRÁI) --- */
+        .label-title {
+            flex: 0 0 85px; /* Cố định chiều rộng cột trái là 85px (hoặc 90px tùy ý) */
+            font-size: 10pt;
             font-weight: normal;
-            font-size: 0.85em; 
-            padding-right: 4px;
+            padding-right: 5px;
+            color: #333;
+            /* Đảm bảo tiêu đề không bị co lại */
+            white-space: nowrap; 
         }
-        .label-item .label-value {
+
+        /* --- CỘT GIÁ TRỊ (BÊN PHẢI) --- */
+        .label-value {
+            flex: 1; /* Chiếm hết phần không gian còn lại */
             font-weight: bold;
-            font-size: 1em; 
+            font-size: 11pt; /* Cỡ chữ mặc định cho các số liệu */
+            line-height: 1.1;
+            text-align: left;
+            word-wrap: break-word; /* Tự động xuống dòng nếu dài */
         }
+
+        /* --- TINH CHỈNH RIÊNG CHO TÊN CÔNG TY --- */
+        .supplier-row .label-value {
+            font-size: 10pt; /* Tên công ty dài nên để chữ nhỏ hơn chút (11pt) để đỡ tốn diện tích */
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+        
+        /* Ẩn border cho tem rỗng */
         .label-item.empty-placeholder {
             border: none !important;
         }
         </style></head><body>`;
-        const itemsPerPage = 8;
-        for (let i = 0; i < itemsData.length; i += itemsPerPage) {
-            printHtml += '<div class="page">';
-            const pageItems = itemsData.slice(i, i + itemsPerPage);
-            pageItems.forEach(item => {
-                const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
-                let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
-                if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
-                    try { const parts = item.ngay_san_xuat.split('-'); if (parts.length === 3) { ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`; } else { ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});}} catch(e) { console.error("Lỗi định dạng NSX cho tem 2: ", e); }
-                }
 
-                printHtml += '<div class="label-item">';
-                printHtml += `<div class="model"><span class="label-title">Model:</span><span class="label-value">${item.ten_loai_nhom || 'N/A'}</span></div>`;
-                printHtml += `<div class="lot-no"><span class="label-title">Lotno:</span><span class="label-value">${item.lot_no || item.LOTNO || 'N/A'}</span></div>`;
-                printHtml += `<div class="bundle-no"><span class="label-title">Số kiện:</span><span class="label-value">${item.kien_so || 'N/A'}</span></div>`;
-                printHtml += `<div class="so-thoi"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
-                printHtml += `<div class="net-weight"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
-                printHtml += `<div class="ngay-sx"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
-                printHtml += '</div>'; 
-            });
-            if (pageItems.length < itemsPerPage) {
-                for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
-                    printHtml += '<div class="label-item empty-placeholder"></div>';
+    const itemsPerPage = 8;
+    for (let i = 0; i < itemsData.length; i += itemsPerPage) {
+        printHtml += '<div class="page">';
+        const pageItems = itemsData.slice(i, i + itemsPerPage);
+        pageItems.forEach(item => {
+            const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
+            let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
+            if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
+                try {
+                    const parts = item.ngay_san_xuat.split('-');
+                    if (parts.length === 3) {
+                        ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    } else {
+                        ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Lỗi định dạng NSX cho tem 2: ", e);
                 }
             }
-            printHtml += '</div>'; // Kết thúc một trang .page
+
+            printHtml += '<div class="label-item">';
+            
+            // 1. Dòng Nhà Cung Cấp (Được căn chỉnh thẳng hàng)
+            printHtml += `<div class="row-item supplier-row">
+                            <span class="label-title">Nhà Cung Cấp:</span>
+                            <span class="label-value">CÔNG TY TNHH THƯƠNG MẠI VÀ KỸ THUẬT PHÚC MINH KHANG</span>
+                          </div>`;
+            
+            // 2. Các dòng dữ liệu khác (dùng chung class row-item)
+            printHtml += `<div class="row-item"><span class="label-title">Model:</span><span class="label-value">${item.ten_loai_nhom || 'N/A'}</span></div>`;
+            printHtml += `<div class="row-item"><span class="label-title">Lotno:</span><span class="label-value">${item.lot_no || item.LOTNO || 'N/A'}</span></div>`;
+            printHtml += `<div class="row-item"><span class="label-title">Số kiện:</span><span class="label-value">${item.kien_so || 'N/A'}</span></div>`;
+            printHtml += `<div class="row-item"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
+            printHtml += `<div class="row-item"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
+            
+            // Dòng cuối cùng thêm class last-row để bỏ gạch chân
+            printHtml += `<div class="row-item last-row"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
+            
+            printHtml += '</div>';
+        });
+        if (pageItems.length < itemsPerPage) {
+            for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
+                printHtml += '<div class="label-item empty-placeholder"></div>';
+            }
         }
-        printHtml += `</body></html>`;
-        const printWindow = window.open('', '_blank', 'height=800,width=800');
-        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); } 
-        else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
-    } // Đóng hàm generateAndPrintHtmlForTem2
+        printHtml += '</div>';
+    }
+    printHtml += `</body></html>`;
+    
+    // ... Phần code in ấn giữ nguyên ...
+    const printWindow = window.open('', '_blank', 'height=800,width=800');
+    if (printWindow) {
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 750);
+    } else {
+        showCustomAlert('Không thể mở cửa sổ in.', 'error');
+    }
+}
 
     function generateAndPrintHtmlForTem3(itemsData) {
         let printHtml = `<html><head><title>In Tem A5 - Landscape</title><style>
@@ -1296,6 +1487,276 @@ document.addEventListener('DOMContentLoaded', function() {
             printWindow.onload = doPrint;
         }
     } // Đóng hàm generateAndPrintHtmlForTem4
+     function generateAndPrintHtmlForTem5(itemsData) {
+        let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 5</title><style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .page {
+            width: 190mm; 
+            height: 277mm; 
+            display: grid;
+            grid-template-columns: 93mm 93mm; 
+            grid-template-rows: 65mm 65mm 65mm 65mm; 
+            gap: 0mm; 
+            justify-content: flex-start; 
+            align-content: flex-start; 
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        .label-item {
+            width: 93mm; 
+            height: 65mm; 
+            border: 0.5px solid #666 !important; /* Thêm !important */
+            padding: 3mm 4mm; 
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            font-size: 9pt; 
+        }
+        .label-item .model,
+        .label-item .lot-no,
+        .label-item .bundle-no,
+        .label-item .so-thoi,
+        .label-item .net-weight,
+        .label-item .ngay-sx {
+            font-size: 15pt; 
+            border-bottom: 1px solid #333 !important; /* Thêm !important */
+            padding-bottom: 1.34mm; 
+            margin-bottom: 1.5mm; 
+            line-height: 1.34; 
+        }
+        .label-item .model { margin-bottom: 2mm; }
+        .label-item .ngay-sx { margin-bottom: 0; }
+        .label-item .label-title {
+            display: inline-block;
+            width: 100px; 
+            font-weight: normal;
+            font-size: 0.85em; 
+            padding-right: 4px;
+        }
+        .label-item .label-value {
+            font-weight: bold;
+            font-size: 1em; 
+        }
+        .label-item.empty-placeholder {
+            border: none !important;
+        }
+        </style></head><body>`;
+        const itemsPerPage = 8;
+        for (let i = 0; i < itemsData.length; i += itemsPerPage) {
+            printHtml += '<div class="page">';
+            const pageItems = itemsData.slice(i, i + itemsPerPage);
+            pageItems.forEach(item => {
+                const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
+                let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
+                if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
+                    try { const parts = item.ngay_san_xuat.split('-'); if (parts.length === 3) { ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`; } else { ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});}} catch(e) { console.error("Lỗi định dạng NSX cho tem 2: ", e); }
+                }
+
+                printHtml += '<div class="label-item">';
+                printHtml += `<div class="model"><span class="label-title">Model:</span><span class="label-value">${item.ten_loai_nhom || 'N/A'}</span></div>`;
+                printHtml += `<div class="lot-no"><span class="label-title">Lotno:</span><span class="label-value">${item.lot_no || item.LOTNO || 'N/A'}</span></div>`;
+                printHtml += `<div class="bundle-no"><span class="label-title">Số kiện:</span><span class="label-value">${item.kien_so || 'N/A'}</span></div>`;
+                printHtml += `<div class="so-thoi"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
+                printHtml += `<div class="net-weight"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
+                printHtml += `<div class="ngay-sx"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
+                printHtml += '</div>'; 
+            });
+            if (pageItems.length < itemsPerPage) {
+                for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
+                    printHtml += '<div class="label-item empty-placeholder"></div>';
+                }
+            }
+            printHtml += '</div>'; // Kết thúc một trang .page
+        }
+        printHtml += `</body></html>`;
+        const printWindow = window.open('', '_blank', 'height=800,width=800');
+        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); } 
+        else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
+    } 
+   // --- HÀM IN TEM 6 (Cập nhật: Bỏ căn lề, Maker nhỏ, Giữ Gross Weight) ---
+    function generateAndPrintHtmlForTem6(itemsData) {
+        let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 6</title><style>
+        @page {
+            size: A4 portrait; /* Khổ giấy A4 đứng */
+            margin: 10mm;      /* Căn lề giấy in */
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Times New Roman", Times, serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .page {
+            width: 190mm;  /* 210mm - 20mm lề */
+            height: 277mm; /* 297mm - 20mm lề */
+            display: flex;
+            flex-direction: column; /* Xếp chồng dọc */
+            justify-content: flex-start;
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        
+        /* Container cho mỗi tem (chiếm khoảng 1/3 trang) */
+        .label-container {
+            width: 100%;
+            height: 90mm; /* Chiều cao cố định cho 1 tem */
+            margin-bottom: 3.5mm; /* Khoảng cách giữa các tem */
+            box-sizing: border-box;
+        }
+        .label-container:last-child {
+            margin-bottom: 0;
+        }
+
+        /* TẠO VIỀN ĐÔI (DOUBLE BORDER) */
+        .border-outer {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #000; /* Viền ngoài */
+            padding: 1px;           /* Khoảng cách giữa 2 viền */
+            box-sizing: border-box;
+        }
+        .border-inner {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #000; /* Viền trong */
+            padding: 10px 40px;     /* Lề nội dung */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Căn giữa nội dung */
+        }
+
+        /* STYLE CÁC DÒNG */
+        .line {
+            font-size: 26pt;   /* Cỡ chữ to mặc định */
+            line-height: 1.3;
+            color: #000;
+            white-space: nowrap;
+            font-weight: normal; /* Không in đậm */
+            margin-bottom: 2px;
+        }
+        
+        /* Cột tiêu đề (SPEC, LOT No...) */
+        .label-key {
+            display: inline-block;
+            margin-right: 10px;  /* Chỉ tạo khoảng cách nhỏ, KHÔNG CĂN THẲNG */
+            font-weight: normal; 
+        }
+
+        /* Cột giá trị bên phải */
+        .label-value {
+            font-weight: normal; 
+        }
+        
+        /* Riêng dòng MAKER: Chữ nhỏ hơn */
+        .maker-value {
+            font-size: 22pt; /* Nhỏ hơn so với 22pt ở trên */
+        }
+        
+        /* Ẩn viền cho tem trống */
+        .label-container.empty-placeholder .border-outer,
+        .label-container.empty-placeholder .border-inner {
+            border: none !important;
+        }
+        </style></head><body>`;
+
+        const itemsPerPage = 3; // 3 Tem trên 1 trang A4
+        for (let i = 0; i < itemsData.length; i += itemsPerPage) {
+            printHtml += '<div class="page">';
+            const pageItems = itemsData.slice(i, i + itemsPerPage);
+            
+            pageItems.forEach(item => {
+                // 1. Tính toán Net Weight
+                const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
+                const netWeightStr = formatKhoiLuong(netWeightVal);
+
+                // 2. Tính toán Gross Weight = Net Weight + 0.5
+                const grossWeightVal = netWeightVal + 0.5;
+                const grossWeightStr = parseFloat(grossWeightVal.toFixed(2));
+
+                // 3. Xử lý LOT No = LOT - KIEN
+                const lotNoDisplay = `${item.lot_no || ''} - ${item.kien_so || ''}`;
+
+                printHtml += `
+                <div class="label-container">
+                    <div class="border-outer">
+                        <div class="border-inner">
+                            <div class="line">
+                                <span class="label-key">SPEC:</span> 
+                                <span class="label-value">${item.ten_loai_nhom || 'N/A'}</span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">LOT No:</span> 
+                                <span class="label-value">${lotNoDisplay}</span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">Bundle No:</span> 
+                                <span class="label-value"></span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">Color code:</span> 
+                                <span class="label-value"></span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">Gross Weight:</span> 
+                                <span class="label-value">${grossWeightStr} kg</span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">Net Weight:</span> 
+                                <span class="label-value">${netWeightStr} kg</span>
+                            </div>
+                            <div class="line">
+                                <span class="label-key">MAKER:</span> 
+                                <span class="label-value maker-value">Thuan Thanh Viet Nam</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            // Nếu trang cuối không đủ 3 tem, thêm div rỗng
+            if (pageItems.length < itemsPerPage) {
+                for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
+                    printHtml += '<div class="label-container empty-placeholder"></div>';
+                }
+            }
+            
+            printHtml += '</div>'; // Đóng .page
+        }
+
+        printHtml += `</body></html>`;
+        
+        // Mở cửa sổ in
+        const printWindow = window.open('', '_blank', 'height=800,width=1000');
+        if (printWindow) {
+            printWindow.document.write(printHtml);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 750);
+        } else {
+            showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup.', 'error');
+        }
+    }
 
 
     // --- LOGIC TOOLTIP (Các hàm xử lý) ---

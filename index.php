@@ -97,6 +97,7 @@
                         <button id="btn-timkiem"><i class="fas fa-search"></i> Tìm Kiếm</button>
                         <button id="btn-nhaphang-modal"><i class="fas fa-dolly-flatbed"></i> Nhập Hàng</button>
                         <button id="btn-xuathang"><i class="fas fa-truck-loading"></i> Xuất Hàng</button>
+                        <button id="btn-ghep-kien" style="background-color: #6f42c1; color: white;"><i class="fas fa-random"></i> Ghép Kiện</button>
                         <button id="btn-intem"><i class="fas fa-print"></i> In Tem</button>
                         <button id="btn-xuat-excel-moi" style="background-color: #17a2b8;"><i class="fas fa-file-excel"></i> Xuất Excel</button> 
                     </div>
@@ -152,6 +153,8 @@
         <div class="modal-content modal-lg">
             <span class="close-button" data-modal-id="modal-nhap-khoiluong">&times;</span>
             <h3><i class="fas fa-weight-hanging"></i> Nhập Khối Lượng </h3>
+            <input type="hidden" id="nhap-hang-mode" value="nhap_hang"> 
+            <input type="hidden" id="ghep-kien-old-ids" value="">
             <p>Lot No: <strong id="modal-lotno-display"></strong> - Loại: <strong id="modal-loainhom-display"></strong> (<span id="modal-loaihang-display"></span>) - NSX: <strong id="modal-nsx-display"></strong></p>
             
             <!-- Thành Phần Hóa Học -->
@@ -210,12 +213,17 @@
                     <input type="number" id="tp-ca" name="Ca" class="thanhphan-input" step="0.001" min="0" value="0">
                 </div>
             </div>
-            
-            <!-- Kiện Bắt Đầu (có class mới để ẩn) -->
-            <div class="modal-form-group modal-form-group-kien-bat-dau">
+            <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 15px;">
+            <div class="modal-form-group modal-form-group-kien-bat-dau" style="flex: 1;">
                 <label for="modal-kien-batdau-input">Kiện Bắt Đầu:</label>
                 <input type="number" id="modal-kien-batdau-input" min="1" value="1" placeholder="Số thứ tự kiện đầu">
             </div>
+            
+            <div class="modal-form-group" style="flex: 1;">
+                <label for="modal-kien-le-input" style="color: #d9534f; font-weight: bold;">Khối lượng Kiện Lẻ (Kg):</label>
+                <input type="number" id="modal-kien-le-input" step="0.01" min="0" placeholder="Nhập nếu có kiện lẻ">
+            </div>
+        </div>
 
             <!-- Form Nhập Khối Lượng (ẩn) -->
             <form id="form-nhap-khoiluong">
@@ -233,10 +241,12 @@
             <div class="modal-form-group">
                 <label for="select-mau-tem">Loại khách hàng / Mẫu tem:</label>
                 <select id="select-mau-tem">
-                    <option value="mau1">Tem 1 (ADC12 - KHVTECH)</option>
-                    <option value="mau2">Tem 2 (Hàng thường)</option>
+                    <option value="mau1">Tem 1 (ADC12 - INNOCO)</option>
+                    <option value="mau2">Tem 2 (PHÚC MINH KHANG)</option>
                     <option value="mau3_A5">Tem 3 (A5 - M&C Electronics)</option>
                     <option value="mau4_A5">Tem 4 (A5 - HONDA TRADING)</option>
+                    <option value="mau5">Tem 5 (GreenAlu)</option>
+                    <option value="mau6">Tem 6 (Thuan Thanh)</option>
                 </select>
             </div>
             <button id="btn-xacnhan-in-tem" class="action-buttons"><i class="fas fa-check"></i> Xác Nhận </button>
