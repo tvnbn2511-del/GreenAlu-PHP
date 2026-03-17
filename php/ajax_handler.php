@@ -75,6 +75,7 @@ try {
     switch ($action) {
         case 'load_initial_data':
             // ... (case 'load_initial_data' của bạn không đổi) ...
+            $kho_id = isset($_GET['kho_id']) ? intval($_GET['kho_id']) : 1;
             $kien_hang_data = []; $latest_lot_no = null; $current_message = null;
             $sql_get_latest_lot = "SELECT lot_no FROM kien_hang ORDER BY ngay_san_xuat DESC, id DESC LIMIT 1";
             $result_latest_lot = $conn->query($sql_get_latest_lot);
@@ -91,10 +92,10 @@ try {
                                 JOIN loai_nhom ln ON kh.loai_nhom_id = ln.id
                                 LEFT JOIN loai_hang lh ON kh.loai_hang_id = lh.id
                                 LEFT JOIN so_thoi_config stc ON kh.loai_nhom_id = stc.loai_nhom_id AND kh.loai_hang_id = stc.loai_hang_id
-                                WHERE kh.lot_no = ? AND kh.trang_thai = 'ton_kho' ORDER BY kh.kien_so ASC";
+                                WHERE kh.lot_no = ? AND kh.trang_thai = 'ton_kho' AND kh.kho_id = ? ORDER BY kh.kien_so ASC";
                 $stmt_kien_hang = $conn->prepare($sql_kien_hang);
                 if ($stmt_kien_hang) {
-                    $stmt_kien_hang->bind_param("s", $latest_lot_no);
+                    $stmt_kien_hang->bind_param("si", $latest_lot_no, $kho_id);
                     if ($stmt_kien_hang->execute()) {
                         $result_kien_hang = $stmt_kien_hang->get_result();
                         while($row_kh = $result_kien_hang->fetch_assoc()) { $kien_hang_data[] = $row_kh; }
@@ -127,20 +128,7 @@ try {
             
             $conn->begin_transaction();
             try {
-                // Đảm bảo tên bảng là 'thanhphanlot' (viết thường) như trong case 'nhap_hang'
-                $sql_thanh_phan = "INSERT INTO thanhphanlot ( 
-                                    lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca
-                                ) VALUES (
-                                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                                ) ON DUPLICATE KEY UPDATE
-                                    Si = VALUES(Si), Fe = VALUES(Fe), Cu = VALUES(Cu), Mn = VALUES(Mn),
-                                    Mg = VALUES(Mg), Zn = VALUES(Zn), Pb = VALUES(Pb), Ni = VALUES(Ni),
-                                    Cr = VALUES(Cr), Sn = VALUES(Sn), Ti = VALUES(Ti), Cd = VALUES(Cd), Ca = VALUES(Ca)";
-                
-                $stmt_thanh_phan = $conn->prepare($sql_thanh_phan);
-                if ($stmt_thanh_phan === false) throw new Exception("Lỗi CSDL (TP_ONLY_01): " . $conn->error);
-
-                // Gán giá trị, dùng ?? 0
+                // Sửa logic bảo toàn dữ liệu TP == 0
                 $si = (float)($thanh_phan['Si'] ?? 0); $fe = (float)($thanh_phan['Fe'] ?? 0);
                 $cu = (float)($thanh_phan['Cu'] ?? 0); $mn = (float)($thanh_phan['Mn'] ?? 0);
                 $mg = (float)($thanh_phan['Mg'] ?? 0); $zn = (float)($thanh_phan['Zn'] ?? 0);
@@ -148,6 +136,28 @@ try {
                 $cr = (float)($thanh_phan['Cr'] ?? 0); $sn = (float)($thanh_phan['Sn'] ?? 0);
                 $ti = (float)($thanh_phan['Ti'] ?? 0); $cd = (float)($thanh_phan['Cd'] ?? 0);
                 $ca = (float)($thanh_phan['Ca'] ?? 0);
+                
+                $sum_tp = $si + $fe + $cu + $mn + $mg + $zn + $pb + $ni + $cr + $sn + $ti + $cd + $ca;
+                
+                if ($sum_tp > 0) {
+                    $sql_thanh_phan = "INSERT INTO thanhphanlot ( 
+                                        lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca
+                                    ) VALUES (
+                                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    ) ON DUPLICATE KEY UPDATE
+                                        Si = VALUES(Si), Fe = VALUES(Fe), Cu = VALUES(Cu), Mn = VALUES(Mn),
+                                        Mg = VALUES(Mg), Zn = VALUES(Zn), Pb = VALUES(Pb), Ni = VALUES(Ni),
+                                        Cr = VALUES(Cr), Sn = VALUES(Sn), Ti = VALUES(Ti), Cd = VALUES(Cd), Ca = VALUES(Ca)";
+                } else {
+                    $sql_thanh_phan = "INSERT IGNORE INTO thanhphanlot ( 
+                                        lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca
+                                    ) VALUES (
+                                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                    )";
+                }
+                
+                $stmt_thanh_phan = $conn->prepare($sql_thanh_phan);
+                if ($stmt_thanh_phan === false) throw new Exception("Lỗi CSDL (TP_ONLY_01): " . $conn->error);
                 
                 $stmt_thanh_phan->bind_param("sddddddddddddd", 
                     $lotno, $si, $fe, $cu, $mn, $mg, $zn, $pb, $ni, $cr, $sn, $ti, $cd, $ca
@@ -226,6 +236,7 @@ try {
 
         case 'tim_kiem_kien_hang':
             // ... (case 'tim_kiem_kien_hang' của bạn không đổi) ...
+            $kho_id = isset($_POST['kho_id']) ? intval($_POST['kho_id']) : 1;
             $lotno_str = isset($_POST['lotno']) ? trim($_POST['lotno']) : '';
             $loai_nhom_id_input = isset($_POST['loai_nhom_id']) ? $_POST['loai_nhom_id'] : '';
             $loai_hang_id_input = isset($_POST['loai_hang_id']) ? $_POST['loai_hang_id'] : '';
@@ -240,8 +251,8 @@ try {
                     JOIN loai_nhom ln ON kh.loai_nhom_id = ln.id
                     LEFT JOIN loai_hang lh ON kh.loai_hang_id = lh.id
                     LEFT JOIN so_thoi_config stc ON kh.loai_nhom_id = stc.loai_nhom_id AND kh.loai_hang_id = stc.loai_hang_id
-                    WHERE 1=1";
-            $params = []; $types = "";
+                    WHERE kh.kho_id = ?";
+            $params = [$kho_id]; $types = "i";
             if (!empty($lotno_str)) {
                 $lotnos = array_filter(array_map('trim', explode(',', $lotno_str)));
                 if (!empty($lotnos)) { $placeholders_lot = implode(',', array_fill(0, count($lotnos), '?')); $sql .= " AND kh.lot_no IN ($placeholders_lot)"; foreach ($lotnos as $ln_item) { $params[] = $ln_item; $types .= "s"; } }
@@ -268,6 +279,7 @@ try {
         // ===== CASE NHAP_HANG ĐÃ ĐƯỢC CẬP NHẬT =====
         case 'nhap_hang':
         // Code xử lý nhập hàng (Đã cập nhật để hỗ trợ Kiện Lẻ override)
+        $kho_id = isset($_POST['kho_id']) ? intval($_POST['kho_id']) : 1;
         $lotno = isset($_POST['lotno']) ? trim($_POST['lotno']) : '';
         $loai_nhom_id_input = isset($_POST['loai_nhom_id']) ? $_POST['loai_nhom_id'] : '';
         $loai_hang_id_input = isset($_POST['loai_hang_id']) ? $_POST['loai_hang_id'] : '';
@@ -283,23 +295,29 @@ try {
 
         $conn->begin_transaction();
         try {
-            // 1. Lưu Thành Phần (Luôn lưu cho Lot No chính)
-            // Copy logic lưu thành phần cũ vào đây (INSERT INTO thanhphanlot ...)
-            $sql_tp = "INSERT INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-                       ON DUPLICATE KEY UPDATE Si=VALUES(Si), Fe=VALUES(Fe), Cu=VALUES(Cu), Mn=VALUES(Mn), Mg=VALUES(Mg), Zn=VALUES(Zn), Pb=VALUES(Pb), Ni=VALUES(Ni), Cr=VALUES(Cr), Sn=VALUES(Sn), Ti=VALUES(Ti), Cd=VALUES(Cd), Ca=VALUES(Ca)";
-            $stmt_tp = $conn->prepare($sql_tp);
+            // 1. Lưu Thành Phần (Bảo tồn TP_OLD nếu nhập toàn 0)
             $si = (float)($thanh_phan['Si']??0); $fe = (float)($thanh_phan['Fe']??0); $cu = (float)($thanh_phan['Cu']??0); 
             $mn = (float)($thanh_phan['Mn']??0); $mg = (float)($thanh_phan['Mg']??0); $zn = (float)($thanh_phan['Zn']??0);
             $pb = (float)($thanh_phan['Pb']??0); $ni = (float)($thanh_phan['Ni']??0); $cr = (float)($thanh_phan['Cr']??0);
             $sn = (float)($thanh_phan['Sn']??0); $ti = (float)($thanh_phan['Ti']??0); $cd = (float)($thanh_phan['Cd']??0);
             $ca = (float)($thanh_phan['Ca']??0);
+            $sum_tp = $si + $fe + $cu + $mn + $mg + $zn + $pb + $ni + $cr + $sn + $ti + $cd + $ca;
+            
+            if ($sum_tp > 0) {
+                $sql_tp = "INSERT INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                           ON DUPLICATE KEY UPDATE Si=VALUES(Si), Fe=VALUES(Fe), Cu=VALUES(Cu), Mn=VALUES(Mn), Mg=VALUES(Mg), Zn=VALUES(Zn), Pb=VALUES(Pb), Ni=VALUES(Ni), Cr=VALUES(Cr), Sn=VALUES(Sn), Ti=VALUES(Ti), Cd=VALUES(Cd), Ca=VALUES(Ca)";
+            } else {
+                $sql_tp = "INSERT IGNORE INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            }
+            $stmt_tp = $conn->prepare($sql_tp);
             $stmt_tp->bind_param("sddddddddddddd", $lotno, $si, $fe, $cu, $mn, $mg, $zn, $pb, $ni, $cr, $sn, $ti, $cd, $ca);
             $stmt_tp->execute();
             $stmt_tp->close();
 
             // 2. Lưu Kiện Hàng (Xử lý Override cho Kiện Lẻ)
-            $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW())");
+            $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho, kho_id) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW(), ?)");
             
             $inserted_count = 0;
             foreach ($ds_khoi_luong as $kien) {
@@ -308,7 +326,7 @@ try {
                 $final_kien_so = !empty($kien['override_kien_so']) ? $kien['override_kien_so'] : $kien['kien_so'];
                 $khoi_luong = (float)$kien['khoi_luong'];
 
-                $stmt_insert->bind_param("siisds", $final_lot_no, $loai_nhom_id_input, $loai_hang_id_input, $final_kien_so, $khoi_luong, $nsx_input);
+                $stmt_insert->bind_param("siisdsi", $final_lot_no, $loai_nhom_id_input, $loai_hang_id_input, $final_kien_so, $khoi_luong, $nsx_input, $kho_id);
                 
                 if (!$stmt_insert->execute()) {
                     // Nếu trùng (Duplicate) thì bỏ qua hoặc báo lỗi tùy bạn. Ở đây tôi throw lỗi để rollback cho an toàn.
@@ -333,6 +351,7 @@ try {
         $old_ids = json_decode($old_ids_json, true);
         
         // (Dữ liệu kiện mới)
+        $kho_id = isset($_POST['kho_id']) ? intval($_POST['kho_id']) : 1;
         $lotno = isset($_POST['lotno']) ? trim($_POST['lotno']) : '';
         $loai_nhom_id_input = isset($_POST['loai_nhom_id']) ? $_POST['loai_nhom_id'] : '';
         $loai_hang_id_input = isset($_POST['loai_hang_id']) ? $_POST['loai_hang_id'] : '';
@@ -352,30 +371,37 @@ try {
             $sql_del = "DELETE FROM kien_hang WHERE id IN ($in_str)";
             if (!$conn->query($sql_del)) throw new Exception("Lỗi xóa kiện cũ: " . $conn->error);
 
-            // 2. TẠO KIỆN MỚI (Logic y hệt case 'nhap_hang' ở trên)
-            // Lưu Thành Phần
-            $sql_tp = "INSERT INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-                       ON DUPLICATE KEY UPDATE Si=VALUES(Si), Fe=VALUES(Fe), Cu=VALUES(Cu), Mn=VALUES(Mn), Mg=VALUES(Mg), Zn=VALUES(Zn), Pb=VALUES(Pb), Ni=VALUES(Ni), Cr=VALUES(Cr), Sn=VALUES(Sn), Ti=VALUES(Ti), Cd=VALUES(Cd), Ca=VALUES(Ca)";
-            $stmt_tp = $conn->prepare($sql_tp);
+            // 2. TẠO KIỆN MỚI
+            // Lưu Thành Phần (Bảo tồn TP_OLD nếu nhập toàn 0)
             $si = (float)($thanh_phan['Si']??0); $fe = (float)($thanh_phan['Fe']??0); $cu = (float)($thanh_phan['Cu']??0); 
             $mn = (float)($thanh_phan['Mn']??0); $mg = (float)($thanh_phan['Mg']??0); $zn = (float)($thanh_phan['Zn']??0);
             $pb = (float)($thanh_phan['Pb']??0); $ni = (float)($thanh_phan['Ni']??0); $cr = (float)($thanh_phan['Cr']??0);
             $sn = (float)($thanh_phan['Sn']??0); $ti = (float)($thanh_phan['Ti']??0); $cd = (float)($thanh_phan['Cd']??0);
             $ca = (float)($thanh_phan['Ca']??0);
+            $sum_tp = $si + $fe + $cu + $mn + $mg + $zn + $pb + $ni + $cr + $sn + $ti + $cd + $ca;
+            
+            if ($sum_tp > 0) {
+                $sql_tp = "INSERT INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                           ON DUPLICATE KEY UPDATE Si=VALUES(Si), Fe=VALUES(Fe), Cu=VALUES(Cu), Mn=VALUES(Mn), Mg=VALUES(Mg), Zn=VALUES(Zn), Pb=VALUES(Pb), Ni=VALUES(Ni), Cr=VALUES(Cr), Sn=VALUES(Sn), Ti=VALUES(Ti), Cd=VALUES(Cd), Ca=VALUES(Ca)";
+            } else {
+                $sql_tp = "INSERT IGNORE INTO thanhphanlot (lot_no, Si, Fe, Cu, Mn, Mg, Zn, Pb, Ni, Cr, Sn, Ti, Cd, Ca) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            }
+            $stmt_tp = $conn->prepare($sql_tp);
             $stmt_tp->bind_param("sddddddddddddd", $lotno, $si, $fe, $cu, $mn, $mg, $zn, $pb, $ni, $cr, $sn, $ti, $cd, $ca);
             $stmt_tp->execute();
             $stmt_tp->close();
 
             // Insert Kiện
-            $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW())");
+            $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho, kho_id) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW(), ?)");
             foreach ($ds_khoi_luong as $kien) {
                 // Logic Override Kiện Lẻ
                 $final_lot_no = !empty($kien['override_lot_no']) ? $kien['override_lot_no'] : $lotno;
                 $final_kien_so = !empty($kien['override_kien_so']) ? $kien['override_kien_so'] : $kien['kien_so'];
                 $khoi_luong = (float)$kien['khoi_luong'];
 
-                $stmt_insert->bind_param("siisds", $final_lot_no, $loai_nhom_id_input, $loai_hang_id_input, $final_kien_so, $khoi_luong, $nsx_input);
+                $stmt_insert->bind_param("siisdsi", $final_lot_no, $loai_nhom_id_input, $loai_hang_id_input, $final_kien_so, $khoi_luong, $nsx_input, $kho_id);
                 if (!$stmt_insert->execute()) throw new Exception("Lỗi tạo kiện mới: " . $stmt_insert->error);
             }
             $stmt_insert->close();
@@ -389,6 +415,56 @@ try {
         }
         break;
         // ===============================================
+
+        case 'chuyen_kho':
+            $kien_ids_json = isset($_POST['kien_ids']) ? $_POST['kien_ids'] : '[]';
+            $kien_ids = json_decode($kien_ids_json, true);
+            $current_kho = isset($_POST['current_kho']) ? intval($_POST['current_kho']) : 1;
+            
+            if (empty($kien_ids) || !is_array($kien_ids) || !array_filter($kien_ids, 'is_numeric')) { 
+                $response['message'] = 'ID kiện hàng không hợp lệ.'; 
+                break;
+            }
+            
+            $kien_ids_sanitized = array_map('intval', $kien_ids);
+            if (empty($kien_ids_sanitized)) {
+                $response['message'] = 'Không có ID kiện hợp lệ.'; 
+                break;
+            }
+            
+            $placeholders = implode(',', array_fill(0, count($kien_ids_sanitized), '?'));
+            $types = str_repeat('i', count($kien_ids_sanitized));
+            $target_kho = ($current_kho == 1) ? 2 : 1;
+            
+            $conn->begin_transaction();
+            try {
+                $sql_update = "UPDATE kien_hang SET kho_id = ? WHERE id IN ($placeholders) AND trang_thai = 'ton_kho'";
+                $stmt_update = $conn->prepare($sql_update);
+                if (!$stmt_update) throw new Exception("Lỗi CSDL (CK01): " . $conn->error);
+                
+                $update_params = array_merge([$target_kho], $kien_ids_sanitized);
+                $update_types = "i" . $types;
+                $stmt_update->bind_param($update_types, ...$update_params);
+                
+                if ($stmt_update->execute()) {
+                    $updated_rows = $stmt_update->affected_rows;
+                    if ($updated_rows > 0) { 
+                        $conn->commit(); 
+                        $response = ['success' => true, 'message' => "Chuyển thành công {$updated_rows} kiện hàng."]; 
+                    } else { 
+                        $conn->rollback(); 
+                        $response['message'] = "Không có kiện hàng nào được chuyển (có thể kiện hàng đã xuất)."; 
+                    }
+                } else { 
+                    throw new Exception("Lỗi khi chuyển kho: " . $stmt_update->error); 
+                }
+                $stmt_update->close();
+            } catch (Exception $e) { 
+                $conn->rollback(); 
+                $response['message'] = 'Lỗi chuyển kho: ' . $e->getMessage(); 
+                error_log($response['message']); 
+            }
+            break;
 
         case 'xuat_hang': // Case xuất hàng cũ (không Excel)
             // ... (case 'xuat_hang' của bạn không đổi) ...

@@ -1,23 +1,24 @@
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function () {
+
     // === BẮT ĐẦU LOGIC CHUYỂN TAB MỚI ===
-    
+
     const tabLinks = document.querySelectorAll('.tab-link');
     const tabPanes = document.querySelectorAll('.tab-pane');
     let isTongQuanLoaded = false; // Cờ để biết tab Tổng Quan đã tải chưa
     let isChiTietLoaded = false;  // Cờ để biết tab Chi Tiết đã tải chưa
-    
+    window.currentKho = '1';
+
     // Lắng nghe sự kiện click trên từng link tab
     tabLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
+        link.addEventListener('click', function (event) {
             event.preventDefault(); // Ngăn trình duyệt nhảy đến (ví dụ: #tongquan)
-            
+
             const tabId = this.getAttribute('data-tab');
-            
+
             // 1. Xóa class 'active' khỏi tất cả các link và pane
             tabLinks.forEach(lnk => lnk.classList.remove('active'));
             tabPanes.forEach(pane => pane.classList.remove('active'));
-            
+
             // 2. Thêm class 'active' cho link và pane được chọn
             this.classList.add('active');
             const activePane = document.getElementById(tabId);
@@ -25,24 +26,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 activePane.classList.add('active');
             }
 
-          // Tải dữ liệu cho tab "Tổng Quan"
-            if (tabId === 'tab-content-tongquan' && !isTongQuanLoaded) {
-            if (typeof loadDashboardData === 'function') {
-                loadDashboardData(); 
-                isTongQuanLoaded = true; // Đánh dấu đã tải
-            }
-            }
-
-         // Tải dữ liệu cho tab "Chi Tiết"
-            if (tabId === 'tab-content-chitiet' && !isChiTietLoaded) {
-            if (typeof loadInitialData === 'function') {
-                loadInitialData(); // Hàm này đã có sẵn trong app.js
-                isChiTietLoaded = true; // Đánh dấu đã tải
+            const tabKho = this.getAttribute('data-kho');
+            if (tabKho) {
+                window.currentKho = tabKho;
+                if (isChiTietLoaded) {
+                    const btnTimkiemLocal = document.getElementById('btn-timkiem');
+                    if (btnTimkiemLocal) btnTimkiemLocal.click();
                 }
             }
-                    });
-                });
-    
+
+            // Tải dữ liệu cho tab "Tổng Quan"
+            if (tabId === 'tab-content-tongquan' && !isTongQuanLoaded) {
+                if (typeof loadDashboardData === 'function') {
+                    loadDashboardData();
+                    isTongQuanLoaded = true; // Đánh dấu đã tải
+                }
+            }
+
+            // Tải dữ liệu cho tab "Chi Tiết"
+            if (tabId === 'tab-content-chitiet') {
+                if (!isChiTietLoaded && typeof loadInitialData === 'function') {
+                    loadInitialData(); // Tải lần đầu (Sẽ dùng currentKho hiện tại là 1)
+                    isChiTietLoaded = true; // Đánh dấu đã tải
+                } else {
+                    // Nếu đã tải dữ liệu ban đầu rồi mà chuyển tab, ta ép nó tìm kiếm lại để nạp Data mới theo Kho
+                    const btnTimkiemLocal = document.getElementById('btn-timkiem');
+                    if (btnTimkiemLocal) btnTimkiemLocal.click();
+                }
+            }
+        });
+    });
+
     // (Tùy chọn): Tự động mở tab dựa trên URL hash (nếu có)
     if (window.location.hash) {
         const hash = window.location.hash; // Ví dụ: #tongquan
@@ -51,10 +65,10 @@ document.addEventListener('DOMContentLoaded', function() {
             targetTabLink.click(); // Kích hoạt sự kiện click
         }
     }
-    
+
     // === KẾT THÚC LOGIC CHUYỂN TAB MỚI ===
 
-    
+
     // === TOÀN BỘ LOGIC CŨ CỦA BẠN BẮT ĐẦU TỪ ĐÂY ===
 
     // --- Biến toàn cục cho Tooltip và Cache ---
@@ -145,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- SỰ KIỆN CLICK VÀO Ô LOT NO ĐỂ SỬA ---
     if (kienhangTbody) {
-        kienhangTbody.addEventListener('click', function(event) {
+        kienhangTbody.addEventListener('click', function (event) {
             const targetCell = event.target.closest('td'); // Tìm ô <td> được click
 
             // Kiểm tra xem ô được click có class 'lotno-clickable' không
@@ -164,49 +178,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: `action=get_kien_hang_detail_for_edit&id=${kienhangId}`
                 })
-                .then(response => handleFetchJsonResponse(response, "lấy chi tiết kiện hàng"))
-                .then(data => {
-                    if (data.success && data.item) {
-                        originalItemDataForEdit = data.item; // Lưu dữ liệu gốc
+                    .then(response => handleFetchJsonResponse(response, "lấy chi tiết kiện hàng"))
+                    .then(data => {
+                        if (data.success && data.item) {
+                            originalItemDataForEdit = data.item; // Lưu dữ liệu gốc
 
-                        // Điền dữ liệu vào form sửa
-                        editKienHangIdInput.value = originalItemDataForEdit.id;
-                        editLotnoInput.value = originalItemDataForEdit.lot_no || '';
-                        
-                        // Populate và chọn đúng cho select Loại Nhôm và Loại Hàng
-                        updateGenericSelect(editLoainhomSelect, window.cachedLoaiNhomOptions, '-- Sửa Loại Nhôm --', 'id', 'ten_loai_nhom', originalItemDataForEdit.loai_nhom_id);
-                        updateGenericSelect(editLoaihangSelect, window.cachedLoaiHangOptions, '-- Sửa Loại Hàng --', 'id', 'ten_loai_hang', originalItemDataForEdit.loai_hang_id);
+                            // Điền dữ liệu vào form sửa
+                            editKienHangIdInput.value = originalItemDataForEdit.id;
+                            editLotnoInput.value = originalItemDataForEdit.lot_no || '';
 
-                        editKiensoInput.value = originalItemDataForEdit.kien_so || '';
-                        editKhoiluongInput.value = originalItemDataForEdit.khoi_luong_kg || '';
-                        editNsxInput.value = originalItemDataForEdit.ngay_san_xuat_raw || ''; 
-                        editGhichuTextarea.value = originalItemDataForEdit.ghi_chu || '';
+                            // Populate và chọn đúng cho select Loại Nhôm và Loại Hàng
+                            updateGenericSelect(editLoainhomSelect, window.cachedLoaiNhomOptions, '-- Sửa Loại Nhôm --', 'id', 'ten_loai_nhom', originalItemDataForEdit.loai_nhom_id);
+                            updateGenericSelect(editLoaihangSelect, window.cachedLoaiHangOptions, '-- Sửa Loại Hàng --', 'id', 'ten_loai_hang', originalItemDataForEdit.loai_hang_id);
 
-                        // Hiển thị thông tin gốc
-                        originalLotnoSpan.textContent = originalItemDataForEdit.lot_no || 'N/A';
-                        originalLoainhomSpan.textContent = originalItemDataForEdit.ten_loai_nhom || 'N/A'; 
-                        originalLoaihangSpan.textContent = originalItemDataForEdit.ten_loai_hang || 'N/A'; 
-                        originalKiensoSpan.textContent = originalItemDataForEdit.kien_so || 'N/A';
-                        originalKhoiluongSpan.textContent = (originalItemDataForEdit.khoi_luong_kg !== null ? formatKhoiLuong(originalItemDataForEdit.khoi_luong_kg) : '0') + ' Kg';
-                        originalNsxSpan.textContent = originalItemDataForEdit.ngay_san_xuat_f || 'N/A'; 
-                        originalGhichuSpan.textContent = originalItemDataForEdit.ghi_chu || 'Không có';
-                        
-                        showModal('modal-sua-kienhang'); // Hàm showModal của bạn
-                    } else {
-                        showCustomAlert('Lỗi: ' + (data.message || 'Không thể lấy chi tiết kiện hàng.'), 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Lỗi AJAX khi lấy chi tiết kiện hàng:', error); // Log lỗi ra console để debug
-                    showCustomAlert('Lỗi AJAX khi lấy chi tiết kiện hàng: ' + error.message, 'error');
-                });
+                            editKiensoInput.value = originalItemDataForEdit.kien_so || '';
+                            editKhoiluongInput.value = originalItemDataForEdit.khoi_luong_kg || '';
+                            editNsxInput.value = originalItemDataForEdit.ngay_san_xuat_raw || '';
+                            editGhichuTextarea.value = originalItemDataForEdit.ghi_chu || '';
+
+                            // Hiển thị thông tin gốc
+                            originalLotnoSpan.textContent = originalItemDataForEdit.lot_no || 'N/A';
+                            originalLoainhomSpan.textContent = originalItemDataForEdit.ten_loai_nhom || 'N/A';
+                            originalLoaihangSpan.textContent = originalItemDataForEdit.ten_loai_hang || 'N/A';
+                            originalKiensoSpan.textContent = originalItemDataForEdit.kien_so || 'N/A';
+                            originalKhoiluongSpan.textContent = (originalItemDataForEdit.khoi_luong_kg !== null ? formatKhoiLuong(originalItemDataForEdit.khoi_luong_kg) : '0') + ' Kg';
+                            originalNsxSpan.textContent = originalItemDataForEdit.ngay_san_xuat_f || 'N/A';
+                            originalGhichuSpan.textContent = originalItemDataForEdit.ghi_chu || 'Không có';
+
+                            showModal('modal-sua-kienhang'); // Hàm showModal của bạn
+                        } else {
+                            showCustomAlert('Lỗi: ' + (data.message || 'Không thể lấy chi tiết kiện hàng.'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Lỗi AJAX khi lấy chi tiết kiện hàng:', error); // Log lỗi ra console để debug
+                        showCustomAlert('Lỗi AJAX khi lấy chi tiết kiện hàng: ' + error.message, 'error');
+                    });
             }
         });
     }
 
     // --- XỬ LÝ SUBMIT FORM SỬA KIỆN HÀNG ---
     if (formSuaKienHang && btnLuuThaydoiKienHang) { // Kiểm tra cả nút lưu
-        formSuaKienHang.addEventListener('submit', function(event) {
+        formSuaKienHang.addEventListener('submit', function (event) {
             event.preventDefault(); // Ngăn form submit theo cách truyền thống
 
             const formData = new FormData(formSuaKienHang);
@@ -216,26 +230,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => handleFetchJsonResponse(response, "lưu thay đổi kiện hàng"))
-            .then(data => {
-                if (data.success) {
-                    showCustomAlert(data.message || 'Cập nhật thành công!', 'success');
-                    closeModal('modal-sua-kienhang');
-                    
-                    // Làm mới bảng để hiển thị thay đổi
-                    if (btnTimkiem) {
-                        btnTimkiem.click(); // Ưu tiên tìm kiếm lại với filter hiện tại
+                .then(response => handleFetchJsonResponse(response, "lưu thay đổi kiện hàng"))
+                .then(data => {
+                    if (data.success) {
+                        showCustomAlert(data.message || 'Cập nhật thành công!', 'success');
+                        closeModal('modal-sua-kienhang');
+
+                        // Làm mới bảng để hiển thị thay đổi
+                        if (btnTimkiem) {
+                            btnTimkiem.click(); // Ưu tiên tìm kiếm lại với filter hiện tại
+                        } else {
+                            loadInitialData(); // Hoặc tải lại dữ liệu ban đầu
+                        }
                     } else {
-                        loadInitialData(); // Hoặc tải lại dữ liệu ban đầu
+                        showCustomAlert('Lỗi cập nhật: ' + (data.message || 'Không rõ nguyên nhân.'), 'error');
                     }
-                } else {
-                    showCustomAlert('Lỗi cập nhật: ' + (data.message || 'Không rõ nguyên nhân.'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Lỗi AJAX khi lưu thay đổi:', error); // Log lỗi ra console để debug
-                showCustomAlert('Lỗi AJAX khi lưu thay đổi: ' + error.message, 'error');
-            });
+                })
+                .catch(error => {
+                    console.error('Lỗi AJAX khi lưu thay đổi:', error); // Log lỗi ra console để debug
+                    showCustomAlert('Lỗi AJAX khi lưu thay đổi: ' + error.message, 'error');
+                });
         });
     }
 
@@ -243,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showCustomAlert(message, type = 'info') {
         console.log(`Alert (${type}): ${message}`);
         // Tạm thời dùng alert, bạn có thể thay thế bằng modal đẹp hơn
-        alert(message); 
+        alert(message);
     }
 
     function showCustomConfirm(message, callback) {
@@ -271,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return num.toFixed(2); // Có phần thập phân
         }
     }
-    
+
     // Hàm chung để cập nhật select options
     function updateGenericSelect(selectElement, options, defaultOptionText, valueField = 'id', textField = 'name', selectedValue = null) {
         if (!selectElement) return;
@@ -295,10 +309,10 @@ document.addEventListener('DOMContentLoaded', function() {
             updateGenericSelect(editLoainhomSelect, options, '-- Sửa Loại Nhôm --', 'id', 'ten_loai_nhom', originalItemDataForEdit.loai_nhom_id);
         }
     }
-    
+
     function updateLoaiHangSelect(options, selectedId = null) {
         updateGenericSelect(loaihangSelectMain, options, '-- Chọn loại hàng --', 'id', 'ten_loai_hang', selectedId);
-         if (editLoaihangSelect) {
+        if (editLoaihangSelect) {
             updateGenericSelect(editLoaihangSelect, options, '-- Sửa Loại Hàng --', 'id', 'ten_loai_hang', originalItemDataForEdit.loai_hang_id);
         }
     }
@@ -309,12 +323,12 @@ document.addEventListener('DOMContentLoaded', function() {
         kienhangTbody.innerHTML = '';
 
         const tableHead = document.querySelector('#tab-content-chitiet table thead tr'); // Nhắm mục tiêu chính xác hơn
-        let hasLoaiHangColumnInHtml = !!(tableHead && tableHead.querySelector('.th-loaihang')); 
+        let hasLoaiHangColumnInHtml = !!(tableHead && tableHead.querySelector('.th-loaihang'));
         const dataHasLoaiHang = data.length > 0 && data[0] && data[0].hasOwnProperty('ten_loai_hang');
-        
+
         let currentEffectiveColspan = 9; // Giá trị mặc định cho bảng của bạn
 
-        if (tableHead) { 
+        if (tableHead) {
             // Xử lý cột Loại Hàng (thêm/bớt tự động)
             if (dataHasLoaiHang && !hasLoaiHangColumnInHtml) {
                 const thLoaiHang = document.createElement('th');
@@ -323,13 +337,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loaiNhomHeader = Array.from(tableHead.children).find(th => th.textContent.trim() === 'Loại Nhôm');
                 if (loaiNhomHeader && loaiNhomHeader.nextSibling) {
                     tableHead.insertBefore(thLoaiHang, loaiNhomHeader.nextSibling);
-                } else { 
+                } else {
                     tableHead.insertBefore(thLoaiHang, tableHead.children[4] || null);
                 }
                 hasLoaiHangColumnInHtml = true;
             } else if (!dataHasLoaiHang && hasLoaiHangColumnInHtml) {
                 const thToRemove = tableHead.querySelector('.th-loaihang');
-                if(thToRemove) { tableHead.removeChild(thToRemove); hasLoaiHangColumnInHtml = false; }
+                if (thToRemove) { tableHead.removeChild(thToRemove); hasLoaiHangColumnInHtml = false; }
             }
             currentEffectiveColspan = tableHead.children.length;
         }
@@ -341,15 +355,15 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCheckboxStates();
             return;
         }
-        
+
         data.forEach((item, index) => {
             const row = kienhangTbody.insertRow();
             const khoiLuongNum = (item.khoi_luong_kg !== null && item.khoi_luong_kg !== undefined) ? parseFloat(item.khoi_luong_kg) : 0;
             const khoiLuongDisplay = `${formatKhoiLuong(khoiLuongNum)} Kg`;
-            
+
             let loaiHangCellHtml = '';
-            if (hasLoaiHangColumnInHtml) { 
-                loaiHangCellHtml = `<td>${item.ten_loai_hang || ''}</td>`; 
+            if (hasLoaiHangColumnInHtml) {
+                loaiHangCellHtml = `<td>${item.ten_loai_hang || ''}</td>`;
             }
 
             // === TÍCH HỢP LOGIC TOOLTIP VÀ SỬA LỖI ===
@@ -357,10 +371,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let lotNoTitle = "Nhấp để sửa thông tin"; // Tooltip mặc định
 
             if (item.ghi_chu && item.ghi_chu.trim() !== "") {
-                lotNoCellClasses.push("lotno-edited"); 
+                lotNoCellClasses.push("lotno-edited");
                 lotNoTitle = item.ghi_chu.replace(/"/g, '&quot;').replace(/\n/g, '&#xA;');
             }
-            
+
             // Thêm data-lotno cho tooltip
             let lotNoCellContent = `<td class="${lotNoCellClasses.join(' ')}" data-id="${item.id}" data-lotno="${item.lot_no}" title="${lotNoTitle}">${item.lot_no || ''}</td>`;
             // === KẾT THÚC TÍCH HỢP ===
@@ -378,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="status-${item.trang_thai}">${item.trang_thai === 'ton_kho' ? 'Tồn kho' : (item.trang_thai === 'da_xuat' ? 'Đã xuất' : item.trang_thai)}</td>
             `;
             row.innerHTML = cellsHtml;
-            row.dataset.itemId = item.id; 
+            row.dataset.itemId = item.id;
         });
         updateCheckboxStates();
     }
@@ -387,9 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleFetchJsonResponse(response, actionDescription) {
         if (!response.ok) {
             let errorText = `Lỗi HTTP ${response.status}: ${response.statusText}`;
-            try { 
+            try {
                 const serverError = await response.text();
-                errorText = serverError || errorText; 
+                errorText = serverError || errorText;
             } catch (e) { /* Bỏ qua */ }
             console.error(`Lỗi HTTP khi ${actionDescription}:`, errorText);
             throw new Error(`Lỗi HTTP khi ${actionDescription}. Chi tiết: ${errorText}`);
@@ -409,35 +423,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const colspan = document.querySelector('#tab-content-chitiet table thead tr')?.children.length || 9;
         if (kienhangTbody) kienhangTbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">Đang tải dữ liệu...</td></tr>`;
 
-        fetch(`${AJAX_URL}?action=load_initial_data`)
+        fetch(`${AJAX_URL}?action=load_initial_data&kho_id=${window.currentKho || '1'}`)
             .then(response => handleFetchJsonResponse(response, "tải dữ liệu ban đầu"))
             .then(data => {
                 if (data.success) {
                     updateLoaiNhomSelect(data.loai_nhom_options);
                     updateLoaiHangSelect(data.loai_hang_options);
-                    renderKienHangTable(data.kien_hang || []); 
+                    renderKienHangTable(data.kien_hang || []);
                     window.cachedLoaiNhomOptions = data.loai_nhom_options || [];
                     window.cachedLoaiHangOptions = data.loai_hang_options || [];
-                    
+
                     // THÊM: Cache dữ liệu thành phần
-                    cacheCompositionData(data.thanh_phan); 
+                    cacheCompositionData(data.thanh_phan);
 
                 } else {
                     showCustomAlert('Lỗi tải dữ liệu ban đầu: ' + (data.message || 'Không rõ nguyên nhân'), 'error');
-                    updateLoaiNhomSelect(data.loai_nhom_options || []); 
+                    updateLoaiNhomSelect(data.loai_nhom_options || []);
                     updateLoaiHangSelect(data.loai_hang_options || []);
-                    renderKienHangTable([]); 
+                    renderKienHangTable([]);
                 }
             })
             .catch(error => {
                 showCustomAlert('Lỗi nghiêm trọng khi tải dữ liệu: ' + error.message, 'error');
-                renderKienHangTable([]); 
+                renderKienHangTable([]);
             })
             .finally(() => {
                 updateCheckboxStates();
             });
     }
-    
+
     // --- XỬ LÝ CÁC MODAL (Đóng) ---
     if (btnDongModalThemLoaiNhom) btnDongModalThemLoaiNhom.addEventListener('click', () => closeModal('modal-them-loainhom'));
     if (btnDongModalThemLoaiHang) btnDongModalThemLoaiHang.addEventListener('click', () => closeModal('modal-them-loaihang'));
@@ -445,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnDongModalChonMauTem) btnDongModalChonMauTem.addEventListener('click', () => closeModal('modal-chon-mau-tem'));
     if (btnDongModalSuaKienHang) btnDongModalSuaKienHang.addEventListener('click', () => closeModal('modal-sua-kienhang'));
 
-    window.addEventListener('click', function(event) {
+    window.addEventListener('click', function (event) {
         if (event.target.classList.contains('modal')) {
             closeModal(event.target.id);
         }
@@ -462,10 +476,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => handleFetchJsonResponse(response, "thêm loại nhôm"))
                 .then(data => {
                     showCustomAlert(data.message || (data.success ? 'Thành công' : 'Lỗi'), data.success ? 'success' : 'error');
-                    if (data.success) { 
-                        updateLoaiNhomSelect(data.loai_nhom_options, data.new_loai_nhom?.id); 
+                    if (data.success) {
+                        updateLoaiNhomSelect(data.loai_nhom_options, data.new_loai_nhom?.id);
                         window.cachedLoaiNhomOptions = data.loai_nhom_options || []; // Cập nhật cache
-                        closeModal('modal-them-loainhom'); 
+                        closeModal('modal-them-loainhom');
                     }
                 })
                 .catch(error => { showCustomAlert('Lỗi AJAX thêm loại nhôm: ' + error.message, 'error'); });
@@ -483,48 +497,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => handleFetchJsonResponse(response, "thêm loại hàng"))
                 .then(data => {
                     showCustomAlert(data.message || (data.success ? 'Thành công' : 'Lỗi'), data.success ? 'success' : 'error');
-                    if (data.success) { 
-                        updateLoaiHangSelect(data.loai_hang_options, data.new_loai_hang?.id); 
+                    if (data.success) {
+                        updateLoaiHangSelect(data.loai_hang_options, data.new_loai_hang?.id);
                         window.cachedLoaiHangOptions = data.loai_hang_options || []; // Cập nhật cache
-                        closeModal('modal-them-loaihang'); 
+                        closeModal('modal-them-loaihang');
                     }
                 })
                 .catch(error => { showCustomAlert('Lỗi AJAX thêm loại hàng: ' + error.message, 'error'); });
         });
     }
-    
+
     // --- TÌM KIẾM KIỆN HÀNG ---
     if (btnTimkiem) {
         btnTimkiem.addEventListener('click', () => {
             const formData = new FormData(); formData.append('action', 'tim_kiem_kien_hang');
+            formData.append('kho_id', window.currentKho || '1');
             if (lotnoInput) formData.append('lotno', lotnoInput.value.trim());
             if (loainhomSelect) formData.append('loai_nhom_id', loainhomSelect.value);
             if (loaihangSelectMain) formData.append('loai_hang_id', loaihangSelectMain.value);
             if (nsxInput) formData.append('nsx', nsxInput.value);
             if (trangthaiSelect) formData.append('trang_thai', trangthaiSelect.value);
-            
+
             const colspan = document.querySelector('#tab-content-chitiet table thead tr')?.children.length || 9;
             if (kienhangTbody) kienhangTbody.innerHTML = `<tr><td colspan="${colspan}" class="no-data">Đang tìm kiếm...</td></tr>`;
-            
+
             fetch(AJAX_URL, { method: 'POST', body: formData })
                 .then(response => handleFetchJsonResponse(response, "tìm kiếm kiện hàng"))
                 .then(data => {
-                    if (data.success) { 
-                        renderKienHangTable(data.kien_hang || []); 
-                        
-                        // THÊM: Cache dữ liệu thành phần
-                        cacheCompositionData(data.thanh_phan); 
+                    if (data.success) {
+                        renderKienHangTable(data.kien_hang || []);
 
-                    } else { 
-                        showCustomAlert('Lỗi tìm kiếm: ' + (data.message || 'Không rõ lỗi'), 'error'); 
-                        renderKienHangTable([]); 
+                        // THÊM: Cache dữ liệu thành phần
+                        cacheCompositionData(data.thanh_phan);
+
+                    } else {
+                        showCustomAlert('Lỗi tìm kiếm: ' + (data.message || 'Không rõ lỗi'), 'error');
+                        renderKienHangTable([]);
                     }
                 })
                 .catch(error => { showCustomAlert('Lỗi AJAX tìm kiếm: ' + error.message, 'error'); renderKienHangTable([]); });
         });
     }
 
-   // =========================================================================
+    // =========================================================================
     // === LOGIC MỚI: NHẬP HÀNG, GHÉP KIỆN & KIỆN LẺ (THAY THẾ CODE CŨ) ===
     // =========================================================================
 
@@ -534,12 +549,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         btnNhaphangModal.addEventListener('click', () => {
             // A. Lấy dữ liệu từ Form chính
-            const lotno = lotnoInput.value.trim(); 
+            const lotno = lotnoInput.value.trim();
             const loainhomId = loainhomSelect.value;
             const loainhomText = loainhomSelect.options[loainhomSelect.selectedIndex]?.text || 'N/A';
-            const loaihangId = loaihangSelectMain.value; 
+            const loaihangId = loaihangSelectMain.value;
             const loaihangText = loaihangSelectMain.options[loaihangSelectMain.selectedIndex]?.text || 'N/A';
-            const nsx = nsxInput.value; 
+            const nsx = nsxInput.value;
             const soluongGoc = parseInt(soluongInput.value);
 
             // B. RESET TRẠNG THÁI (Quan trọng: Xóa chế độ Ghép Kiện)
@@ -554,23 +569,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-weight-hanging"></i> Nhập Khối Lượng & Thành Phần';
 
             // C. XỬ LÝ CÁC TRƯỜNG HỢP HIỂN THỊ
-            
+
             // Trường hợp 1: Chỉ nhập Lot No (Chế độ Nhập/Sửa Thành Phần)
-            if (lotno && !soluongGoc) { 
+            if (lotno && !soluongGoc) {
                 if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-flask"></i> Nhập/Sửa Thành Phần Hóa Học';
                 if (modalLotnoDisplay) modalLotnoDisplay.textContent = lotno;
                 if (modalLoainhomDisplay) modalLoainhomDisplay.textContent = 'N/A';
                 if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = 'N/A';
                 if (modalNsxDisplay) modalNsxDisplay.textContent = 'N/A';
-                
+
                 formNhapKhoiluong.innerHTML = ''; // Xóa form nhập cân
                 modalNhapKhoiLuong.classList.add('composition-only'); // Ẩn phần nhập cân
-                
+
                 // Reset input thành phần về 0
                 document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
-                
+
                 showModal('modal-nhap-khoiluong');
-                return; 
+                return;
             }
 
             // Trường hợp 2: Nhập hàng đầy đủ
@@ -578,31 +593,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 showCustomAlert('Vui lòng điền đầy đủ thông tin (Lot No, Loại Nhôm, Loại Hàng, NSX, Số Lượng Kiện) để nhập hàng.', 'error');
                 return;
             }
-            
+
             // Điền thông tin hiển thị lên Modal
             if (modalLotnoDisplay) modalLotnoDisplay.textContent = lotno;
             if (modalLoainhomDisplay) modalLoainhomDisplay.textContent = loainhomText;
-            if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = loaihangText; 
-            if (modalNsxDisplay) { 
-                try { const d = new Date(nsx); modalNsxDisplay.textContent = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`; } 
-                catch (e) { modalNsxDisplay.textContent = nsx; } 
+            if (modalLoaihangDisplay) modalLoaihangDisplay.textContent = loaihangText;
+            if (modalNsxDisplay) {
+                try { const d = new Date(nsx); modalNsxDisplay.textContent = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`; }
+                catch (e) { modalNsxDisplay.textContent = nsx; }
             }
-            
+
             modalNhapKhoiLuong.classList.remove('composition-only'); // Hiện phần nhập cân
-            modalKienBatdauInput.value = '1'; 
-            
+            modalKienBatdauInput.value = '1';
+
             // Hàm sinh ô nhập liệu (Kiện 1, Kiện 2...)
-            window.generateWeightInputsScoped = function() { 
-                const kienBatDauVal = parseInt(modalKienBatdauInput.value); 
+            window.generateWeightInputsScoped = function () {
+                const kienBatDauVal = parseInt(modalKienBatdauInput.value);
                 formNhapKhoiluong.innerHTML = '';
-                
-                if (isNaN(soluongGoc) || soluongGoc <= 0) { 
-                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số lượng kiện không hợp lệ.</p>'; return; 
+
+                if (isNaN(soluongGoc) || soluongGoc <= 0) {
+                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số lượng kiện không hợp lệ.</p>'; return;
                 }
-                if (isNaN(kienBatDauVal) || kienBatDauVal <= 0) { 
-                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số kiện bắt đầu không hợp lệ.</p>'; return; 
+                if (isNaN(kienBatDauVal) || kienBatDauVal <= 0) {
+                    formNhapKhoiluong.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Số kiện bắt đầu không hợp lệ.</p>'; return;
                 }
-                
+
                 for (let i = 0; i < soluongGoc; i++) {
                     const kienSoFormatted = String(kienBatDauVal + i).padStart(2, '0');
                     const itemDiv = document.createElement('div'); itemDiv.classList.add('kien-item');
@@ -610,13 +625,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     formNhapKhoiluong.appendChild(itemDiv);
                 }
             };
-            
-            window.generateWeightInputsScoped(); 
-            modalKienBatdauInput.oninput = window.generateWeightInputsScoped; 
-            
+
+            window.generateWeightInputsScoped();
+            modalKienBatdauInput.oninput = window.generateWeightInputsScoped;
+
             // Reset các ô thành phần về 0
             document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
-            
+
             showModal('modal-nhap-khoiluong');
         });
     }
@@ -633,12 +648,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // B. Kiểm tra thông tin Lô Mới
-            const lotno = lotnoInput.value.trim(); 
+            const lotno = lotnoInput.value.trim();
             const loainhomId = loainhomSelect.value;
             const loainhomText = loainhomSelect.options[loainhomSelect.selectedIndex]?.text || 'N/A';
-            const loaihangId = loaihangSelectMain.value; 
+            const loaihangId = loaihangSelectMain.value;
             const loaihangText = loaihangSelectMain.options[loaihangSelectMain.selectedIndex]?.text || 'N/A';
-            const nsx = nsxInput.value; 
+            const nsx = nsxInput.value;
             const soluongGoc = parseInt(soluongInput.value);
 
             if (!lotno || !loainhomId || !loaihangId || !nsx || isNaN(soluongGoc) || soluongGoc <= 0) {
@@ -667,8 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
             modalKienBatdauInput.value = '1';
 
             // E. Tái sử dụng hàm sinh ô nhập liệu
-            window.generateWeightInputsScoped = function() { 
-                const kienBatDauVal = parseInt(modalKienBatdauInput.value); 
+            window.generateWeightInputsScoped = function () {
+                const kienBatDauVal = parseInt(modalKienBatdauInput.value);
                 formNhapKhoiluong.innerHTML = '';
                 for (let i = 0; i < soluongGoc; i++) {
                     const kienSoFormatted = String(kienBatDauVal + i).padStart(2, '0');
@@ -677,8 +692,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     formNhapKhoiluong.appendChild(itemDiv);
                 }
             };
-            window.generateWeightInputsScoped(); 
-            modalKienBatdauInput.oninput = window.generateWeightInputsScoped; 
+            window.generateWeightInputsScoped();
+            modalKienBatdauInput.oninput = window.generateWeightInputsScoped;
 
             // Reset thành phần
             document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input').forEach(input => input.value = 0);
@@ -691,15 +706,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnXacnhanNhaphang && formNhapKhoiluong) {
         btnXacnhanNhaphang.addEventListener('click', () => {
             // A. Lấy thông tin chung
-            const lotnoMain = document.getElementById('lotno-input').value.trim(); 
+            const lotnoMain = document.getElementById('lotno-input').value.trim();
             const loainhomId = document.getElementById('loainhom-select').value;
             const loaihangId = document.getElementById('loaihang-select-main').value;
             const nsx = document.getElementById('nsx-input').value;
-            
+
             // Lấy chế độ hiện tại (nhap_hang hay ghep_kien)
             const inputMode = document.getElementById('nhap-hang-mode');
             const currentMode = inputMode ? inputMode.value : 'nhap_hang';
-            
+
             // Lấy ID cũ nếu là ghép kiện
             const inputOldIds = document.getElementById('ghep-kien-old-ids');
             const oldIds = inputOldIds ? inputOldIds.value : '';
@@ -708,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const compositionData = {};
             const inputsThanhPhan = document.querySelectorAll('#modal-nhap-khoiluong .thanhphan-input');
             inputsThanhPhan.forEach(input => {
-                const name = input.name; 
+                const name = input.name;
                 const value = parseFloat(input.value) || 0;
                 if (name) compositionData[name] = value;
             });
@@ -725,26 +740,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData.append('action', 'luu_thanh_phan'); // Action riêng cho chỉ lưu thành phần
             } else {
                 // --- CHẾ ĐỘ NHẬP HÀNG / GHÉP KIỆN ---
-                const dsKhoiLuong = []; 
+                const dsKhoiLuong = [];
                 const inputFields = formNhapKhoiluong.querySelectorAll('input[type="number"]');
                 let isValid = true;
-                
+
                 // 1. Thu thập các kiện thường
                 if (inputFields.length > 0) {
                     inputFields.forEach(input => {
-                        if (!isValid) return; 
-                        const kienSo = input.dataset.kienSo; 
+                        if (!isValid) return;
+                        const kienSo = input.dataset.kienSo;
                         const khoiLuong = parseFloat(input.value);
-                        if (isNaN(khoiLuong) || khoiLuong <= 0) { 
-                            showCustomAlert(`Khối lượng kiện ${kienSo} không hợp lệ.`, 'error'); 
-                            input.focus(); 
-                            isValid = false; 
-                        } else { 
-                            dsKhoiLuong.push({ kien_so: kienSo, khoi_luong: khoiLuong }); 
+                        if (isNaN(khoiLuong) || khoiLuong <= 0) {
+                            showCustomAlert(`Khối lượng kiện ${kienSo} không hợp lệ.`, 'error');
+                            input.focus();
+                            isValid = false;
+                        } else {
+                            dsKhoiLuong.push({ kien_so: kienSo, khoi_luong: khoiLuong });
                         }
                     });
                 }
-                
+
                 // 2. Thu thập Kiện Lẻ (Logic Đảo Thông Tin)
                 const inputKienLe = document.getElementById('modal-kien-le-input');
                 if (inputKienLe && inputKienLe.value) {
@@ -759,9 +774,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (!isValid) return;
-                if (dsKhoiLuong.length === 0) { 
-                    showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng hoặc kiện lẻ.', 'error'); 
-                    return; 
+                if (dsKhoiLuong.length === 0) {
+                    showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng hoặc kiện lẻ.', 'error');
+                    return;
                 }
 
                 // 3. Đóng gói dữ liệu gửi đi
@@ -773,19 +788,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     formData.append('action', 'nhap_hang');
                 }
 
-                formData.append('loai_nhom_id', loainhomId); 
+                formData.append('loai_nhom_id', loainhomId);
                 formData.append('loai_hang_id', loaihangId);
-                formData.append('nsx', nsx); 
+                formData.append('nsx', nsx);
                 formData.append('ds_khoi_luong', JSON.stringify(dsKhoiLuong));
             }
-            
+
             // D. Gửi AJAX
             fetch(AJAX_URL, { method: 'POST', body: formData })
                 .then(response => handleFetchJsonResponse(response, currentMode === 'ghep_kien' ? "ghép kiện" : "nhập hàng"))
                 .then(data => {
                     showCustomAlert(data.message || (data.success ? 'Thành công' : 'Lỗi'), data.success ? 'success' : 'error');
-                    if (data.success) { 
-                        closeModal('modal-nhap-khoiluong'); 
+                    if (data.success) {
+                        closeModal('modal-nhap-khoiluong');
                         if (btnTimkiem) btnTimkiem.click(); else loadInitialData(); // Load lại bảng
                         if (soluongInput) soluongInput.value = ''; // Reset ô số lượng
                     }
@@ -797,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================================================================
     // === KẾT THÚC LOGIC MỚI ===
     // =========================================================================
-    
+
     // --- XUẤT HÀNG (Cập nhật DB + Xuất Excel) ---
     if (btnXuathang && kienhangTbody) {
         btnXuathang.addEventListener('click', () => {
@@ -806,45 +821,88 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showCustomConfirm(`Bạn có chắc chắn muốn XUẤT ${selectedIds.length} kiện hàng (trạng thái sẽ đổi) và tải file Excel không?`, () => {
                 const formData = new FormData();
-                formData.append('action', 'xuat_hang_excel'); 
+                formData.append('action', 'xuat_hang_excel');
                 formData.append('kien_ids', JSON.stringify(selectedIds));
 
                 fetch(AJAX_URL, { method: 'POST', body: formData })
-                .then(async response => {
-                    if (!response.ok) {
-                        let errorData = { message: `Lỗi HTTP ${response.status}` };
-                        try { const text = await response.text(); errorData = JSON.parse(text); } 
-                        catch (e) { const text = await response.text(); errorData.message = `Lỗi HTTP ${response.status}: ${text||response.statusText}`; }
-                        throw new Error(errorData.message);
-                    }
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") !== -1) {
-                        return response.blob().then(blob => ({ blob, headers: response.headers, success: true, isFile: true, message: `Đã xuất ${selectedIds.length} kiện và tải file Excel.` }));
-                    } else {
-                        return response.json().then(data => {
-                            if (!data.success) { throw new Error(data.message || "Lỗi không xác định."); }
-                            return { success: false, message: "Phản hồi không mong đợi.", isFile: false};
-                        });
-                    }
-                })
-                .then(result => {
-                    if (result.isFile && result.blob) {
-                        const url = window.URL.createObjectURL(result.blob);
-                        const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                        let filename = "XuatHang.xlsx";
-                        const disposition = result.headers.get('Content-Disposition');
-                        if (disposition && disposition.indexOf('attachment') !== -1) {
-                            const fnRegex = /filename[^;=\n]*=(?:(?:"((?:[^"]|\\")*)")|([^;\n]*))/;
-                            const matches = fnRegex.exec(disposition);
-                            if (matches != null && (matches[1] || matches[2])) { filename = matches[1] ? matches[1].replace(/\\"/g, '"') : matches[2];}
+                    .then(async response => {
+                        if (!response.ok) {
+                            let errorData = { message: `Lỗi HTTP ${response.status}` };
+                            try { const text = await response.text(); errorData = JSON.parse(text); }
+                            catch (e) { const text = await response.text(); errorData.message = `Lỗi HTTP ${response.status}: ${text || response.statusText}`; }
+                            throw new Error(errorData.message);
                         }
-                        a.download = filename; document.body.appendChild(a); a.click();
-                        window.URL.revokeObjectURL(url); a.remove();
-                    }
-                    showCustomAlert(result.message, result.success ? 'success' : 'error');
-                    if (result.success && result.isFile) { if (btnTimkiem) btnTimkiem.click(); else loadInitialData(); }
-                })
-                .catch(error => { showCustomAlert('Lỗi khi xuất hàng & Excel: ' + error.message, 'error'); });
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") !== -1) {
+                            return response.blob().then(blob => ({ blob, headers: response.headers, success: true, isFile: true, message: `Đã xuất ${selectedIds.length} kiện và tải file Excel.` }));
+                        } else {
+                            return response.json().then(data => {
+                                if (!data.success) { throw new Error(data.message || "Lỗi không xác định."); }
+                                return { success: false, message: "Phản hồi không mong đợi.", isFile: false };
+                            });
+                        }
+                    })
+                    .then(result => {
+                        if (result.isFile && result.blob) {
+                            const url = window.URL.createObjectURL(result.blob);
+                            const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                            let filename = "XuatHang.xlsx";
+                            let selectedLotNos = [];
+                            let loaiNhom = '';
+                            const checkedBoxes = Array.from(kienhangTbody.querySelectorAll('.row-checkbox:checked'));
+                            checkedBoxes.forEach(cb => {
+                                const row = cb.closest('tr');
+                                const lotnoElem = row.querySelector('.lotno-clickable');
+                                if (lotnoElem) {
+                                    const lotno = (lotnoElem.dataset.lotno || lotnoElem.textContent.trim());
+                                    if (lotno && !selectedLotNos.includes(lotno)) selectedLotNos.push(lotno);
+                                }
+                                if (!loaiNhom && row.querySelectorAll('td')[3]) {
+                                    loaiNhom = row.querySelectorAll('td')[3].textContent.trim();
+                                }
+                            });
+
+                            if (selectedLotNos.length > 0) {
+                                const lotNosStr = selectedLotNos.join('+');
+                                filename = loaiNhom ? `${lotNosStr}_${loaiNhom}.xlsx` : `${lotNosStr}.xlsx`;
+                            }
+
+                            a.download = filename; document.body.appendChild(a); a.click();
+                            window.URL.revokeObjectURL(url); a.remove();
+                        }
+                        showCustomAlert(result.message, result.success ? 'success' : 'error');
+                        if (result.success && result.isFile) { if (btnTimkiem) btnTimkiem.click(); else loadInitialData(); }
+                    })
+                    .catch(error => { showCustomAlert('Lỗi khi xuất hàng & Excel: ' + error.message, 'error'); });
+            });
+        });
+    }
+
+    // --- NÚT CHUYỂN KHO ---
+    const btnChuyenkho = document.getElementById('btn-chuyenkho');
+    if (btnChuyenkho && kienhangTbody) {
+        btnChuyenkho.addEventListener('click', () => {
+            const selectedIds = Array.from(kienhangTbody.querySelectorAll('.row-checkbox:checked')).map(cb => cb.dataset.id);
+            if (selectedIds.length === 0) { showCustomAlert('Vui lòng chọn ít nhất một kiện hàng để chuyển kho.', 'info'); return; }
+
+            const targetKhoName = window.currentKho === '1' ? 'KHO 277' : 'Kho Hùng Phát';
+
+            showCustomConfirm(`Bạn có chắc chắn muốn chuyển ${selectedIds.length} kiện hàng sang ${targetKhoName} không?`, () => {
+                const formData = new FormData();
+                formData.append('action', 'chuyen_kho');
+                formData.append('kien_ids', JSON.stringify(selectedIds));
+                formData.append('current_kho', window.currentKho || '1');
+
+                fetch(AJAX_URL, { method: 'POST', body: formData })
+                    .then(response => handleFetchJsonResponse(response, "chuyển kho"))
+                    .then(data => {
+                        showCustomAlert(data.message || (data.success ? 'Thành công' : 'Lỗi'), data.success ? 'success' : 'error');
+                        if (data.success) {
+                            const btnTimkiemLocal = document.getElementById('btn-timkiem');
+                            if (btnTimkiemLocal) btnTimkiemLocal.click(); else loadInitialData();
+                        }
+                    })
+                    .catch(error => { showCustomAlert('Lỗi khi chuyển kho: ' + error.message, 'error'); });
             });
         });
     }
@@ -857,7 +915,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showCustomAlert('Vui lòng chọn ít nhất một kiện hàng để xuất ra Excel.', 'info');
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('action', 'export_selected_to_excel'); // << ACTION MỚI
             formData.append('kien_ids', JSON.stringify(selectedIds));
@@ -866,52 +924,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData
             })
-            .then(async response => {
-                if (!response.ok) {
-                    let errorData = { message: `Lỗi HTTP ${response.status}: ${response.statusText}` };
-                    try {
-                        const text = await response.text();
-                        try { errorData = JSON.parse(text); } catch (e) { errorData.message = `Lỗi HTTP ${response.status}: ${text || response.statusText}`; }
-                    } catch (e) { /* ignore */ }
-                    throw new Error(errorData.message || `Lỗi HTTP ${response.status}`);
-                }
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") !== -1) {
-                    return response.blob().then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        let filename = "DuLieuKienHang.xlsx";
-                        const disposition = response.headers.get('Content-Disposition');
-                        if (disposition && disposition.indexOf('attachment') !== -1) {
-                            const filenameRegex = /filename[^;=\n]*=(?:(?:"((?:[^"]|\\")*)")|([^;\n]*))/;
-                            const matches = filenameRegex.exec(disposition);
-                            if (matches != null && (matches[1] || matches[2])) {
-                                filename = matches[1] ? matches[1].replace(/\\"/g, '"') : matches[2];
+                .then(async response => {
+                    if (!response.ok) {
+                        let errorData = { message: `Lỗi HTTP ${response.status}: ${response.statusText}` };
+                        try {
+                            const text = await response.text();
+                            try { errorData = JSON.parse(text); } catch (e) { errorData.message = `Lỗi HTTP ${response.status}: ${text || response.statusText}`; }
+                        } catch (e) { /* ignore */ }
+                        throw new Error(errorData.message || `Lỗi HTTP ${response.status}`);
+                    }
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") !== -1) {
+                        return response.blob().then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = url;
+                            let filename = "DuLieuKienHang.xlsx";
+                            let selectedLotNos = [];
+                            let loaiNhom = '';
+                            const checkedBoxes = Array.from(kienhangTbody.querySelectorAll('.row-checkbox:checked'));
+                            checkedBoxes.forEach(cb => {
+                                const row = cb.closest('tr');
+                                const lotnoElem = row.querySelector('.lotno-clickable');
+                                if (lotnoElem) {
+                                    const lotno = (lotnoElem.dataset.lotno || lotnoElem.textContent.trim());
+                                    if (lotno && !selectedLotNos.includes(lotno)) selectedLotNos.push(lotno);
+                                }
+                                if (!loaiNhom && row.querySelectorAll('td')[3]) {
+                                    loaiNhom = row.querySelectorAll('td')[3].textContent.trim();
+                                }
+                            });
+
+                            if (selectedLotNos.length > 0) {
+                                const lotNosStr = selectedLotNos.join('+');
+                                filename = loaiNhom ? `${lotNosStr}_${loaiNhom}.xlsx` : `${lotNosStr}.xlsx`;
                             }
-                        }
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        a.remove();
-                        return { success: true, message: `Đã tải file Excel cho ${selectedIds.length} kiện.`, isFile: true };
-                    });
-                } else {
-                    return response.json().then(data => {
-                        if (!data.success) { throw new Error(data.message || "Lỗi không xác định từ server."); }
-                        return { success: false, message: "Phản hồi không mong đợi từ server.", isFile: false };
-                    });
-                }
-            })
-            .then(result => { 
-                showCustomAlert(result.message, result.success ? 'success' : 'error');
-            })
-            .catch(error => {
-                console.error('Lỗi khi xuất Excel (chỉ xuất):', error);
-                showCustomAlert('Lỗi khi xuất Excel (chỉ xuất): ' + error.message, 'error');
-            });
+
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            a.remove();
+                            return { success: true, message: `Đã tải file Excel cho ${selectedIds.length} kiện.`, isFile: true };
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            if (!data.success) { throw new Error(data.message || "Lỗi không xác định từ server."); }
+                            return { success: false, message: "Phản hồi không mong đợi từ server.", isFile: false };
+                        });
+                    }
+                })
+                .then(result => {
+                    showCustomAlert(result.message, result.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    console.error('Lỗi khi xuất Excel (chỉ xuất):', error);
+                    showCustomAlert('Lỗi khi xuất Excel (chỉ xuất): ' + error.message, 'error');
+                });
         });
     }
 
@@ -927,30 +997,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const mauTemDaChon = selectMauTem.value;
             if (selectedIds.length === 0) { showCustomAlert('Vui lòng chọn lại kiện hàng để in tem.', 'info'); closeModal('modal-chon-mau-tem'); return; }
             if (!mauTemDaChon) { showCustomAlert('Vui lòng chọn một mẫu tem.', 'error'); return; }
-            
+
             closeModal('modal-chon-mau-tem');
             fetchKienHangDetailsAndPrint(selectedIds, mauTemDaChon); // Chỉ cần gọi hàm này
         });
     }
 
     function fetchKienHangDetailsAndPrint(selectedIds, mauTem) {
-        const formData = new FormData(); formData.append('action', 'get_kien_hang_details_for_printing'); 
+        const formData = new FormData(); formData.append('action', 'get_kien_hang_details_for_printing');
         formData.append('kien_ids', JSON.stringify(selectedIds)); formData.append('mau_tem', mauTem);
         fetch(AJAX_URL, { method: 'POST', body: formData })
             .then(response => handleFetchJsonResponse(response, `lấy chi tiết kiện hàng cho mẫu ${mauTem}`))
             .then(data => {
                 if (data.success && data.items && data.items.length > 0) {
-                    
+
                     // Sửa lỗi: Truyền data.thanh_phan vào hàm in
-                    if (mauTem === 'mau1') { generateAndPrintHtmlForTem1(data.items); } 
+                    if (mauTem === 'mau1') { generateAndPrintHtmlForTem1(data.items); }
                     else if (mauTem === 'mau2') { generateAndPrintHtmlForTem2(data.items); }
                     else if (mauTem === 'mau3_A5') { generateAndPrintHtmlForTem3(data.items); }
-                    else if (mauTem === 'mau4_A5') { 
+                    else if (mauTem === 'mau4_A5') {
                         generateAndPrintHtmlForTem4(data.items, data.thanh_phan); // Sửa ở đây
                     }
-                    else if (mauTem === 'mau5') { 
-                    // Truyền data.items và data.thanh_phan (nếu tem cần hiện thành phần hóa học)
-                    generateAndPrintHtmlForTem5(data.items, data.thanh_phan); 
+                    else if (mauTem === 'mau5') {
+                        // Truyền data.items và data.thanh_phan (nếu tem cần hiện thành phần hóa học)
+                        generateAndPrintHtmlForTem5(data.items, data.thanh_phan);
                     }
                     else if (mauTem === 'mau6') { generateAndPrintHtmlForTem6(data.items); }
                 } else { showCustomAlert('Lỗi lấy dữ liệu in: ' + (data.message || 'Không có dữ liệu'), 'error'); }
@@ -958,10 +1028,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => { showCustomAlert(error.message, 'error'); });
     } // Đóng hàm fetchKienHangDetailsAndPrint
 
-    
+
     // --- CÁC HÀM IN TEM (1, 2, 3) ---
     function generateAndPrintHtmlForTem1(itemsData) {
-        let printHtml = `<html><head><title>In Tem Kiện Hàng - ADC12</title><style>
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         @page {
             size: A4 portrait;
             margin: 10mm; /* Giữ nguyên lề 10mm A4 */
@@ -1026,12 +1097,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         printHtml += `</body></html>`;
         const printWindow = window.open('', '_blank', 'height=800,width=800');
-        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); } 
+        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); }
         else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
     } // Đóng hàm generateAndPrintHtmlForTem1
 
-   function generateAndPrintHtmlForTem2(itemsData) {
-    let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 2</title><style>
+    function generateAndPrintHtmlForTem2(itemsData) {
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         @page {
             size: A4 portrait;
             margin: 10mm;
@@ -1120,75 +1192,76 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         </style></head><body>`;
 
-    const itemsPerPage = 8;
-    for (let i = 0; i < itemsData.length; i += itemsPerPage) {
-        printHtml += '<div class="page">';
-        const pageItems = itemsData.slice(i, i + itemsPerPage);
-        pageItems.forEach(item => {
-            const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
-            let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
-            if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
-                try {
-                    const parts = item.ngay_san_xuat.split('-');
-                    if (parts.length === 3) {
-                        ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                    } else {
-                        ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
+        const itemsPerPage = 8;
+        for (let i = 0; i < itemsData.length; i += itemsPerPage) {
+            printHtml += '<div class="page">';
+            const pageItems = itemsData.slice(i, i + itemsPerPage);
+            pageItems.forEach(item => {
+                const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
+                let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
+                if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
+                    try {
+                        const parts = item.ngay_san_xuat.split('-');
+                        if (parts.length === 3) {
+                            ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        } else {
+                            ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Lỗi định dạng NSX cho tem 2: ", e);
                     }
-                } catch (e) {
-                    console.error("Lỗi định dạng NSX cho tem 2: ", e);
                 }
-            }
 
-            printHtml += '<div class="label-item">';
-            
-            // 1. Dòng Nhà Cung Cấp (Được căn chỉnh thẳng hàng)
-            printHtml += `<div class="row-item supplier-row">
+                printHtml += '<div class="label-item">';
+
+                // 1. Dòng Nhà Cung Cấp (Được căn chỉnh thẳng hàng)
+                printHtml += `<div class="row-item supplier-row">
                             <span class="label-title">Nhà Cung Cấp:</span>
                             <span class="label-value">CÔNG TY TNHH THƯƠNG MẠI VÀ KỸ THUẬT PHÚC MINH KHANG</span>
                           </div>`;
-            
-            // 2. Các dòng dữ liệu khác (dùng chung class row-item)
-            printHtml += `<div class="row-item"><span class="label-title">Model:</span><span class="label-value">${item.ten_loai_nhom || 'N/A'}</span></div>`;
-            printHtml += `<div class="row-item"><span class="label-title">Lotno:</span><span class="label-value">${item.lot_no || item.LOTNO || 'N/A'}</span></div>`;
-            printHtml += `<div class="row-item"><span class="label-title">Số kiện:</span><span class="label-value">${item.kien_so || 'N/A'}</span></div>`;
-            printHtml += `<div class="row-item"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
-            printHtml += `<div class="row-item"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
-            
-            // Dòng cuối cùng thêm class last-row để bỏ gạch chân
-            printHtml += `<div class="row-item last-row"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
-            
-            printHtml += '</div>';
-        });
-        if (pageItems.length < itemsPerPage) {
-            for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
-                printHtml += '<div class="label-item empty-placeholder"></div>';
+
+                // 2. Các dòng dữ liệu khác (dùng chung class row-item)
+                printHtml += `<div class="row-item"><span class="label-title">Model:</span><span class="label-value">${item.ten_loai_nhom || 'N/A'}</span></div>`;
+                printHtml += `<div class="row-item"><span class="label-title">Lotno:</span><span class="label-value">${item.lot_no || item.LOTNO || 'N/A'}</span></div>`;
+                printHtml += `<div class="row-item"><span class="label-title">Số kiện:</span><span class="label-value">${item.kien_so || 'N/A'}</span></div>`;
+                printHtml += `<div class="row-item"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
+                printHtml += `<div class="row-item"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
+
+                // Dòng cuối cùng thêm class last-row để bỏ gạch chân
+                printHtml += `<div class="row-item last-row"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
+
+                printHtml += '</div>';
+            });
+            if (pageItems.length < itemsPerPage) {
+                for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
+                    printHtml += '<div class="label-item empty-placeholder"></div>';
+                }
             }
+            printHtml += '</div>';
         }
-        printHtml += '</div>';
+        printHtml += `</body></html>`;
+
+        // ... Phần code in ấn giữ nguyên ...
+        const printWindow = window.open('', '_blank', 'height=800,width=800');
+        if (printWindow) {
+            printWindow.document.write(printHtml);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 750);
+        } else {
+            showCustomAlert('Không thể mở cửa sổ in.', 'error');
+        }
     }
-    printHtml += `</body></html>`;
-    
-    // ... Phần code in ấn giữ nguyên ...
-    const printWindow = window.open('', '_blank', 'height=800,width=800');
-    if (printWindow) {
-        printWindow.document.write(printHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-        }, 750);
-    } else {
-        showCustomAlert('Không thể mở cửa sổ in.', 'error');
-    }
-}
 
     function generateAndPrintHtmlForTem3(itemsData) {
-        let printHtml = `<html><head><title>In Tem A5 - Landscape</title><style>
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         body { 
             margin: 0; 
             font-family: Arial, sans-serif; 
@@ -1241,10 +1314,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const companyAddress = "Số nhà 402, đường Tôn Đức Thắng, Phường Hồng Tiến, Thành phố Phổ Yên, Tỉnh Thái Nguyên, Việt Nam";
             const customerName = "M&C Electronics Vina";
             const quantity = item.kien_so || 'N/A';
-            const alumiumType = `AL ${item.ten_loai_nhom || 'N/A'}`; 
-            const weight = formatKhoiLuong(item.khoi_luong_kg); 
-            const lotNumber = item.lot_no || item.LOTNO || 'N/A'; 
-            const manufacturingDate = item.ngay_san_xuat_f || 'N/A'; 
+            const alumiumType = `AL ${item.ten_loai_nhom || 'N/A'}`;
+            const weight = formatKhoiLuong(item.khoi_luong_kg);
+            const lotNumber = item.lot_no || item.LOTNO || 'N/A';
+            const manufacturingDate = item.ngay_san_xuat_f || 'N/A';
 
             printHtml += `
             <div class="label-page-a5">
@@ -1261,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
         });
         printHtml += `</body></html>`;
-        
+
         const printWindow = window.open('', '_blank', 'width=800,height=600,resizable=yes,scrollbars=yes');
         if (printWindow) {
             printWindow.document.open();
@@ -1276,17 +1349,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     printWindow.print();
                 }
             };
-            
+
             if (printWindow.document.readyState === "complete") {
                 doPrint();
             } else {
                 printWindow.onload = doPrint;
             }
-             setTimeout(() => {
+            setTimeout(() => {
                 if (printWindow.document.readyState === "complete" && !printCalled) {
                     doPrint();
                 }
-            }, 750); 
+            }, 750);
         } else {
             showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error');
         }
@@ -1312,7 +1385,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function generateAndPrintHtmlForTem4(itemsData, thanhPhanData) { // Sửa 1: Nhận 2 tham số
-        let printHtml = `<html><head><title>In Tem Kiện Hàng - Bảng Kẻ Ô</title><style>
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         body { 
             margin: 0; 
             font-family: 'Times New Roman', Times, serif; 
@@ -1391,14 +1465,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const customerAddress = "Tầng 8, Tòa nhà Mặt trời sông Hồng, số 23 Phan Chu Trinh, Phường Cửa Nam, Thành phố Hà Nội";
             const supplierName = "CÔNG TY TNHH Greenalu"; // Giả định
             const origin = "Việt Nam"; // Giả định
-            
-            const lotNumber = item.lot_no || 'N/A'; 
-            
+
+            const lotNumber = item.lot_no || 'N/A';
+
             // Sửa 2: Sử dụng 'thanhPhanData' được truyền vào
             const compositionObject = thanhPhanData ? thanhPhanData[lotNumber] : null;
             const composition = formatCompositionString(compositionObject);
-            
-            const itemName = 'Nhôm dạng thỏi chưa gia công: ' + (item.ten_loai_nhom || 'N/A'); 
+
+            const itemName = 'Nhôm dạng thỏi chưa gia công: ' + (item.ten_loai_nhom || 'N/A');
             const ingotCount = item.so_thoi || 'N/A'; // Số thỏi
             const bundleCount = item.kien_so || 'N/A'; // Số kiện
             const netWeight = formatKhoiLuong(item.khoi_luong_kg); // Trọng lượng
@@ -1457,13 +1531,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 </table>
             </div>`;
         });
-        
+
         printHtml += `</body></html>`;
-        
+
         const printWindow = window.open('', '_blank', 'width=1000,height=800,resizable=yes,scrollbars=yes');
         if (!printWindow) {
             if (typeof showCustomAlert === 'function') {
-                 showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error');
+                showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error');
             }
             return;
         }
@@ -1471,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', function() {
         printWindow.document.open();
         printWindow.document.write(printHtml);
         printWindow.document.close();
-        
+
         let printCalled = false;
         const doPrint = () => {
             if (!printCalled) {
@@ -1480,15 +1554,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 printWindow.print();
             }
         };
-        
+
         if (printWindow.document.readyState === "complete") {
             doPrint();
         } else {
             printWindow.onload = doPrint;
         }
     } // Đóng hàm generateAndPrintHtmlForTem4
-     function generateAndPrintHtmlForTem5(itemsData) {
-        let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 5</title><style>
+    function generateAndPrintHtmlForTem5(itemsData) {
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         @page {
             size: A4 portrait;
             margin: 10mm;
@@ -1563,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const netWeightFormatted = formatKhoiLuong(item.khoi_luong_kg);
                 let ngaySanXuatFormatted = item.ngay_san_xuat_f || 'N/A';
                 if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
-                    try { const parts = item.ngay_san_xuat.split('-'); if (parts.length === 3) { ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`; } else { ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});}} catch(e) { console.error("Lỗi định dạng NSX cho tem 2: ", e); }
+                    try { const parts = item.ngay_san_xuat.split('-'); if (parts.length === 3) { ngaySanXuatFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`; } else { ngaySanXuatFormatted = new Date(item.ngay_san_xuat.replace(/-/g, '/')).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } } catch (e) { console.error("Lỗi định dạng NSX cho tem 2: ", e); }
                 }
 
                 printHtml += '<div class="label-item">';
@@ -1573,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 printHtml += `<div class="so-thoi"><span class="label-title">Số thỏi:</span><span class="label-value">${item.so_thoi !== null && item.so_thoi !== undefined ? item.so_thoi : 'N/A'}</span></div>`;
                 printHtml += `<div class="net-weight"><span class="label-title">Khối lượng:</span><span class="label-value">${netWeightFormatted} ${netWeightFormatted !== 'N/A' ? 'Kg' : ''}</span></div>`;
                 printHtml += `<div class="ngay-sx"><span class="label-title">NSX:</span><span class="label-value">${ngaySanXuatFormatted}</span></div>`;
-                printHtml += '</div>'; 
+                printHtml += '</div>';
             });
             if (pageItems.length < itemsPerPage) {
                 for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
@@ -1584,12 +1659,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         printHtml += `</body></html>`;
         const printWindow = window.open('', '_blank', 'height=800,width=800');
-        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); } 
+        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); }
         else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
-    } 
-   // --- HÀM IN TEM 6 (Cập nhật: Bỏ căn lề, Maker nhỏ, Giữ Gross Weight) ---
+    }
+    // --- HÀM IN TEM 6 (Cập nhật: Bỏ căn lề, Maker nhỏ, Giữ Gross Weight) ---
     function generateAndPrintHtmlForTem6(itemsData) {
-        let printHtml = `<html><head><title>In Tem Kiện Hàng - Mẫu 6</title><style>
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         @page {
             size: A4 portrait; /* Khổ giấy A4 đứng */
             margin: 10mm;      /* Căn lề giấy in */
@@ -1602,7 +1678,7 @@ document.addEventListener('DOMContentLoaded', function() {
             print-color-adjust: exact !important;
         }
         .page {
-            width: 190mm;  /* 210mm - 20mm lề */
+            width: 180mm;  /* 210mm - 20mm lề */
             height: 277mm; /* 297mm - 20mm lề */
             display: flex;
             flex-direction: column; /* Xếp chồng dọc */
@@ -1617,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', function() {
         /* Container cho mỗi tem (chiếm khoảng 1/3 trang) */
         .label-container {
             width: 100%;
-            height: 90mm; /* Chiều cao cố định cho 1 tem */
+            height: 87mm; /* Chiều cao cố định cho 1 tem */
             margin-bottom: 3.5mm; /* Khoảng cách giữa các tem */
             box-sizing: border-box;
         }
@@ -1647,7 +1723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         /* STYLE CÁC DÒNG */
         .line {
             font-size: 26pt;   /* Cỡ chữ to mặc định */
-            line-height: 1.3;
+            line-height: 1.25;
             color: #000;
             white-space: nowrap;
             font-weight: normal; /* Không in đậm */
@@ -1668,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         /* Riêng dòng MAKER: Chữ nhỏ hơn */
         .maker-value {
-            font-size: 22pt; /* Nhỏ hơn so với 22pt ở trên */
+            font-size: 20pt; /* Nhỏ hơn so với 22pt ở trên */
         }
         
         /* Ẩn viền cho tem trống */
@@ -1682,13 +1758,13 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < itemsData.length; i += itemsPerPage) {
             printHtml += '<div class="page">';
             const pageItems = itemsData.slice(i, i + itemsPerPage);
-            
+
             pageItems.forEach(item => {
                 // 1. Tính toán Net Weight
                 const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
                 const netWeightStr = formatKhoiLuong(netWeightVal);
 
-                // 2. Tính toán Gross Weight = Net Weight + 0.5
+                // 2. Tính toán Gross Weight = Net Weight + 5.5
                 const grossWeightVal = netWeightVal + 0.5;
                 const grossWeightStr = parseFloat(grossWeightVal.toFixed(2));
 
@@ -1738,12 +1814,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     printHtml += '<div class="label-container empty-placeholder"></div>';
                 }
             }
-            
+
             printHtml += '</div>'; // Đóng .page
         }
 
         printHtml += `</body></html>`;
-        
+
         // Mở cửa sổ in
         const printWindow = window.open('', '_blank', 'height=800,width=1000');
         if (printWindow) {
@@ -1775,17 +1851,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function handleMouseOver(e) {
         const targetCell = e.target.closest('.lotno-hover-trigger');
-        if (!targetCell) return; 
+        if (!targetCell) return;
         const lotno = targetCell.dataset.lotno;
-        const composition = compositionDataCache[lotno]; 
+        const composition = compositionDataCache[lotno];
         updateTooltipContent(composition);
-        if(tooltipElement) tooltipElement.style.display = 'block';
-        handleMouseMove(e); 
+        if (tooltipElement) tooltipElement.style.display = 'block';
+        handleMouseMove(e);
     }
     function handleMouseOut(e) {
         const targetCell = e.target.closest('.lotno-hover-trigger');
         if (!targetCell) return;
-        if(tooltipElement) tooltipElement.style.display = 'none';
+        if (tooltipElement) tooltipElement.style.display = 'none';
     }
     function handleMouseMove(e) {
         if (tooltipElement && tooltipElement.style.display === 'block') {
@@ -1827,7 +1903,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkedCheckboxes = kienhangTbody.querySelectorAll('.row-checkbox:checked');
         checkedCheckboxes.forEach(checkbox => {
             const weightAttr = checkbox.dataset.weight; const weight = parseFloat(weightAttr);
-            if (!isNaN(weight) && Number.isFinite(weight)) { totalWeight += weight; } 
+            if (!isNaN(weight) && Number.isFinite(weight)) { totalWeight += weight; }
             else { console.warn(`data-weight không hợp lệ: "${weightAttr}" cho ID ${checkbox.dataset.id}`); }
         });
         totalSelectedWeightSpan.textContent = `${formatKhoiLuong(totalWeight)} Kg`;
@@ -1837,33 +1913,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (headerCheckbox && kienhangTbody) {
             const rowCheckboxes = kienhangTbody.querySelectorAll('.row-checkbox');
             const checkedCount = kienhangTbody.querySelectorAll('.row-checkbox:checked').length;
-            if (rowCheckboxes.length === 0) { headerCheckbox.checked = false; headerCheckbox.indeterminate = false; } 
-            else if (checkedCount === 0) { headerCheckbox.checked = false; headerCheckbox.indeterminate = false; } 
-            else if (checkedCount === rowCheckboxes.length) { headerCheckbox.checked = true; headerCheckbox.indeterminate = false; } 
+            if (rowCheckboxes.length === 0) { headerCheckbox.checked = false; headerCheckbox.indeterminate = false; }
+            else if (checkedCount === 0) { headerCheckbox.checked = false; headerCheckbox.indeterminate = false; }
+            else if (checkedCount === rowCheckboxes.length) { headerCheckbox.checked = true; headerCheckbox.indeterminate = false; }
             else { headerCheckbox.checked = false; headerCheckbox.indeterminate = true; }
         }
         updateTotalSelectedWeight();
     }
 
     if (headerCheckbox) {
-        headerCheckbox.addEventListener('change', function() {
+        headerCheckbox.addEventListener('change', function () {
             if (kienhangTbody) { kienhangTbody.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = this.checked; }); }
             updateCheckboxStates();
         });
     }
     if (kienhangTbody) {
-        kienhangTbody.addEventListener('change', function(event) {
+        kienhangTbody.addEventListener('change', function (event) {
             if (event.target.classList.contains('row-checkbox')) { updateCheckboxStates(); }
         });
     }
 
     // --- KHỞI CHẠY LẦN ĐẦU ---
-   updateCheckboxStates();
+    updateCheckboxStates();
 
-// Tải dữ liệu cho tab "Tổng Quan" (vì đây là tab mặc định)
-if (typeof loadDashboardData === 'function') {
-    loadDashboardData();
-    isTongQuanLoaded = true; // Đánh dấu đã tải ngay
-}
+    // Tải dữ liệu cho tab "Tổng Quan" (vì đây là tab mặc định)
+    if (typeof loadDashboardData === 'function') {
+        loadDashboardData();
+        isTongQuanLoaded = true; // Đánh dấu đã tải ngay
+    }
 
 }); // Đóng DOMContentLoaded

@@ -20,9 +20,13 @@
                 <a href="#tongquan" class="tab-link active" data-tab="tab-content-tongquan">
                     <i class="fas fa-chart-pie"></i> Tổng Quan Tồn Kho
                 </a>
-                <!-- Tab 2: Quản Lý (CŨ) -->
-                <a href="#chitiet" class="tab-link" data-tab="tab-content-chitiet">
-                    <i class="fas fa-tasks"></i> Quản Lý Chi Tiết
+                <!-- Tab Kho Hùng Phát -->
+                <a href="#khoHungPhat" class="tab-link" data-tab="tab-content-chitiet" data-kho="1">
+                    <i class="fas fa-tasks"></i> Kho Hùng Phát
+                </a>
+                <!-- Tab KHO 277 -->
+                <a href="#kho277" class="tab-link" data-tab="tab-content-chitiet" data-kho="2">
+                    <i class="fas fa-tasks"></i> KHO 277
                 </a>
             </nav>
         </header>
@@ -97,6 +101,7 @@
                         <button id="btn-timkiem"><i class="fas fa-search"></i> Tìm Kiếm</button>
                         <button id="btn-nhaphang-modal"><i class="fas fa-dolly-flatbed"></i> Nhập Hàng</button>
                         <button id="btn-xuathang"><i class="fas fa-truck-loading"></i> Xuất Hàng</button>
+                        <button id="btn-chuyenkho" style="background-color: #f39c12; color: white;"><i class="fas fa-exchange-alt"></i> Chuyển Kho</button>
                         <button id="btn-ghep-kien" style="background-color: #6f42c1; color: white;"><i class="fas fa-random"></i> Ghép Kiện</button>
                         <button id="btn-intem"><i class="fas fa-print"></i> In Tem</button>
                         <button id="btn-xuat-excel-moi" style="background-color: #17a2b8;"><i class="fas fa-file-excel"></i> Xuất Excel</button> 
