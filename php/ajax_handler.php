@@ -667,12 +667,14 @@ try {
                                         COALESCE(stc.so_thoi_mac_dinh, 'N/A') AS so_thoi,
                                         kh.khoi_luong_kg,
                                         DATE_FORMAT(kh.ngay_san_xuat, '%d/%m/%Y') AS ngay_san_xuat_f,
-                                        lh.ten_loai_hang
+                                        lh.ten_loai_hang,
+                                        po.po_number
                                  FROM kien_hang kh
                                  JOIN loai_nhom ln ON kh.loai_nhom_id = ln.id
                                  LEFT JOIN loai_hang lh ON kh.loai_hang_id = lh.id
                                  LEFT JOIN so_thoi_config stc
                                     ON kh.loai_nhom_id = stc.loai_nhom_id AND kh.loai_hang_id = stc.loai_hang_id
+                                 LEFT JOIN POnumber po ON kh.lot_no = po.lot_no
                                  WHERE kh.id IN ($placeholders_print)
                                  ORDER BY FIELD(kh.id, $placeholders_print)"; // Cần bind 2 lần
                     

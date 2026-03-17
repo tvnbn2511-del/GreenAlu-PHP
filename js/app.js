@@ -1015,6 +1015,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         generateAndPrintHtmlForTem5(data.items, data.thanh_phan);
                     }
                     else if (mauTem === 'mau6') { generateAndPrintHtmlForTem6(data.items); }
+                    else if (mauTem === 'mau7') { generateAndPrintHtmlForTem7(data.items); }
                 } else { showCustomAlert('Lỗi lấy dữ liệu in: ' + (data.message || 'Không có dữ liệu'), 'error'); }
             })
             .catch(error => { showCustomAlert(error.message, 'error'); });
@@ -1826,8 +1827,207 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function generateAndPrintHtmlForTem7(itemsData) {
+        const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
+        let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-size: 14pt;
+        }
+        .page-large {
+            width: 190mm; 
+            height: 277mm; 
+            page-break-after: always;
+            box-sizing: border-box;
+            border: 1px solid #000;
+            padding: 15mm 10mm;
+            display: flex;
+            flex-direction: column;
+        }
+        .page-small {
+            width: 190mm; 
+            height: 277mm; 
+            display: grid;
+            grid-template-columns: 94mm 94mm; 
+            grid-template-rows: 68mm 68mm 68mm 68mm; 
+            gap: 1mm; 
+            justify-content: flex-start;
+            align-content: flex-start;
+            page-break-after: always;
+            box-sizing: border-box;
+        }
+        .page-small:last-child, .page-large:last-child {
+            page-break-after: avoid;
+        }
+        /* Header A4 to */
+        .header-large {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5mm;
+            margin-bottom: 15mm;
+        }
+        .header-large img {
+            max-width: 120px;
+            margin-right: 20px;
+        }
+        .header-large-text {
+            flex: 1;
+            text-align: center;
+        }
+        .header-large-text h1 {
+            margin: 0 0 5px 0;
+            font-size: 26pt;
+            font-weight: normal;
+        }
+        .header-large-text h2 {
+            margin: 0;
+            font-size: 18pt;
+            font-weight: normal;
+        }
+        /* Content A4 to */
+        .content-large {
+            flex: 1;
+            padding: 0 5mm;
+        }
+        .content-large .line {
+            display: flex;
+            margin-bottom: 30px;
+            font-size: 20pt;
+        }
+        .content-large .line .lbl {
+            width: 250px;
+        }
+        .content-large .line .val {
+            font-weight: normal;
+        }
 
-    // --- LOGIC TOOLTIP (Các hàm xử lý) ---
+        /* Tem nhỏ */
+        .label-small {
+            width: 93mm; 
+            height: 65mm; 
+            border: 1px solid #000 !important;
+            padding: 3mm 4mm; 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            font-size: 11pt; 
+            line-height: 1.4;
+        }
+        .header-small {
+            display: flex;
+            align-items: center;
+            margin-bottom: 3mm;
+        }
+        .header-small img {
+            max-width: 50px;
+            margin-right: 15px;
+        }
+        .header-small-text {
+            flex: 1;
+        }
+        .header-small-text h1 {
+            margin: 0 0 2px 0;
+            font-size: 14pt;
+            font-weight: normal;
+        }
+        .header-small-text h2 {
+            margin: 0;
+            font-size: 11pt;
+            font-weight: normal;
+        }
+        .label-small .line {
+            display: flex;
+            margin-bottom: 2px;
+        }
+        .label-small .line .lbl {
+            width: 150px;
+        }
+        .label-small.empty {
+            border: none !important;
+        }
+        </style></head><body>`;
+
+        // IN CÁC TEM TO TRƯỚC
+        itemsData.forEach(item => {
+            const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
+            const netWeightStr = formatKhoiLuong(netWeightVal);
+            const grossWeightStr = (netWeightVal + 0.5).toFixed(1);
+            
+            printHtml += `
+            <div class="page-large">
+                <div class="header-large">
+                    <img src="img/logo.png" onerror="this.style.display='none'" alt="Logo" />
+                    <div class="header-large-text">
+                        <h1>Công ty TNHH GreenAlu</h1>
+                        <h2>Supplier Honda Trading</h2>
+                    </div>
+                </div>
+                <div class="content-large">
+                    <div class="line"><div class="lbl">PO Number:</div><div class="val">${item.po_number || ''}</div></div>
+                    <div class="line"><div class="lbl">Model:</div><div class="val">${item.ten_loai_nhom || ''}</div></div>
+                    <div class="line"><div class="lbl">Lotno:</div><div class="val">${item.lot_no || ''}</div></div>
+                    <div class="line"><div class="lbl">Net Weight :</div><div class="val">${netWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Quantity of ingot:</div><div class="val">${item.so_thoi || ''}</div></div>
+                </div>
+            </div>`;
+        });
+
+        // IN CÁC TEM NHỎ (8 tem / trang)
+        const itemsPerPage = 8;
+        for (let i = 0; i < itemsData.length; i += itemsPerPage) {
+            printHtml += '<div class="page-small">';
+            const pageItems = itemsData.slice(i, i + itemsPerPage);
+            
+            pageItems.forEach(item => {
+                const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
+                const netWeightStr = formatKhoiLuong(netWeightVal);
+                const grossWeightStr = (netWeightVal + 0.5).toFixed(1);
+                
+                let ngaySanXuatFormatted = item.ngay_san_xuat_f || '';
+                if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
+                    try { const p = item.ngay_san_xuat.split('-'); if (p.length === 3) { ngaySanXuatFormatted = p[2] + '/' + p[1] + '/' + p[0]; } } catch (e) {}
+                }
+
+                printHtml += `
+                <div class="label-small">
+                    <div class="header-small">
+                        <img src="img/logo.png" onerror="this.style.display='none'" alt="Logo" />
+                        <div class="header-small-text">
+                            <h1>Công ty TNHH GreenAlu</h1>
+                            <h2>Supplier Honda Trading</h2>
+                        </div>
+                    </div>
+                    <div class="line"><div class="lbl">Model:</div><div class="val">${item.ten_loai_nhom || ''}</div></div>
+                    <div class="line"><div class="lbl">LotNo:</div><div class="val">${item.lot_no || ''}</div></div>
+                    <div class="line"><div class="lbl">Net Weight:</div><div class="val">${netWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Quantity of ingot:</div><div class="val">${item.so_thoi || ''}</div></div>
+                    <div class="line"><div class="lbl">Manufacturing date:</div><div class="val">${ngaySanXuatFormatted}</div></div>
+                </div>`;
+            });
+            
+            if (pageItems.length < itemsPerPage) {
+                for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
+                    printHtml += '<div class="label-small empty"></div>';
+                }
+            }
+            printHtml += '</div>';
+        }
+
+        printHtml += `</body></html>`;
+        const printWindow = window.open('', '_blank', 'height=800,width=800');
+        if (printWindow) { printWindow.document.write(printHtml); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 750); }
+        else { showCustomAlert('Không thể mở cửa sổ in. Vui lòng kiểm tra cài đặt chặn popup của trình duyệt.', 'error'); }
+    }
     function initializeTooltipLogic() {
         tooltipElement = document.getElementById('composition-tooltip');
         // const kienhangTbody = document.getElementById('kienhang-tbody'); // Đã khai báo ở trên
