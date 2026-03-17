@@ -252,7 +252,7 @@
                     <option value="mau4_A5">Tem 4 (A5 - HONDA TRADING)</option>
                     <option value="mau5">Tem 5 (GreenAlu)</option>
                     <option value="mau6">Tem 6 (Thuan Thanh)</option>
-                    <option value="mau7">Tem 7 (Honda Trading - A4 & Nhỏ)</option>
+                    <option value="mau7">Tem 7 (GPMI)</option>
                 </select>
             </div>
             <button id="btn-xacnhan-in-tem" class="action-buttons"><i class="fas fa-check"></i> Xác Nhận </button>

@@ -1831,8 +1831,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const firstLot = itemsData[0] ? itemsData[0].lot_no : 'Tem';
         let printHtml = `<html><head><title>Tem_${firstLot}</title><style>
         @page {
-            size: A4 portrait;
+            /* Mặc định không set cứng size ở đây để cho phép ghi đè bên trong */
             margin: 10mm;
+        }
+        @page landscape-page {
+            size: A4 landscape;
+        }
+        @page portrait-page {
+            size: A4 portrait;
         }
         body {
             margin: 0;
@@ -1842,18 +1848,20 @@ document.addEventListener('DOMContentLoaded', function () {
             font-size: 14pt;
         }
         .page-large {
-            width: 190mm; 
-            height: 277mm; 
+            page: landscape-page; /* Gọi page landscape */
+            width: 277mm; /* Chiều rộng A4 ngang (297 - 2*10 lề) */
+            height: 190mm; /* Chiều cao A4 ngang (210 - 2*10 lề) */
             page-break-after: always;
             box-sizing: border-box;
             border: 1px solid #000;
-            padding: 15mm 10mm;
+            padding: 15mm 20mm;
             display: flex;
             flex-direction: column;
         }
         .page-small {
-            width: 190mm; 
-            height: 277mm; 
+            page: portrait-page; /* Gọi page portrait */
+            width: 190mm; /* Chiều rộng A4 dọc */
+            height: 277mm; /* Chiều cao A4 dọc */
             display: grid;
             grid-template-columns: 94mm 94mm; 
             grid-template-rows: 68mm 68mm 68mm 68mm; 
@@ -1871,39 +1879,39 @@ document.addEventListener('DOMContentLoaded', function () {
             display: flex;
             align-items: center;
             border-bottom: 1px solid #000;
-            padding-bottom: 5mm;
-            margin-bottom: 15mm;
+            padding-bottom: 8mm;
+            margin-bottom: 20mm; /* Tăng khoảng cách */
         }
         .header-large img {
-            max-width: 120px;
-            margin-right: 20px;
+            max-width: 150px; /* Logo to hơn chút */
+            margin-right: 30px;
         }
         .header-large-text {
             flex: 1;
             text-align: center;
         }
         .header-large-text h1 {
-            margin: 0 0 5px 0;
-            font-size: 26pt;
+            margin: 0 0 8px 0;
+            font-size: 32pt; /* Chữ to hơn */
             font-weight: normal;
         }
         .header-large-text h2 {
             margin: 0;
-            font-size: 18pt;
+            font-size: 22pt; /* Chữ to hơn */
             font-weight: normal;
         }
         /* Content A4 to */
         .content-large {
             flex: 1;
-            padding: 0 5mm;
+            padding: 0 10mm;
         }
         .content-large .line {
             display: flex;
-            margin-bottom: 30px;
-            font-size: 20pt;
+            margin-bottom: 45px; /* Tăng dòng */
+            font-size: 26pt; /* Tăng cỡ chữ nội dung */
         }
         .content-large .line .lbl {
-            width: 250px;
+            width: 350px; /* Nhãn rộng thêm để vừa chữ to */
         }
         .content-large .line .val {
             font-weight: normal;
