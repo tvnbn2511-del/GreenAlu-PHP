@@ -763,7 +763,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 2. Thu thập PO Number
                 const inputPoNumber = document.getElementById('modal-po-number-input');
                 const poNumberVal = inputPoNumber ? inputPoNumber.value.trim() : '';
-                
+
                 if (!isValid) return;
                 if (dsKhoiLuong.length === 0) {
                     showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng.', 'error');
@@ -1880,7 +1880,7 @@ document.addEventListener('DOMContentLoaded', function () {
             align-items: center;
             border-bottom: 1px solid #000;
             padding-bottom: 8mm;
-            margin-bottom: 20mm; /* Tăng khoảng cách */
+            margin-bottom: 10mm; /* Giảm khoảng cách */
         }
         .header-large img {
             max-width: 150px; /* Logo to hơn chút */
@@ -1907,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         .content-large .line {
             display: flex;
-            margin-bottom: 45px; /* Tăng dòng */
+            margin-bottom: 20px; /* Giảm dòng để khỏi bị tràn */
             font-size: 26pt; /* Tăng cỡ chữ nội dung */
         }
         .content-large .line .lbl {
@@ -1968,7 +1968,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
             const netWeightStr = formatKhoiLuong(netWeightVal);
             const grossWeightStr = (netWeightVal + 0.5).toFixed(1);
-            
+
             printHtml += `
             <div class="page-large">
                 <div class="header-large">
@@ -1994,15 +1994,15 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let i = 0; i < itemsData.length; i += itemsPerPage) {
             printHtml += '<div class="page-small">';
             const pageItems = itemsData.slice(i, i + itemsPerPage);
-            
+
             pageItems.forEach(item => {
                 const netWeightVal = parseFloat(item.khoi_luong_kg) || 0;
                 const netWeightStr = formatKhoiLuong(netWeightVal);
                 const grossWeightStr = (netWeightVal + 0.5).toFixed(1);
-                
+
                 let ngaySanXuatFormatted = item.ngay_san_xuat_f || '';
                 if (item.ngay_san_xuat && !item.ngay_san_xuat_f) {
-                    try { const p = item.ngay_san_xuat.split('-'); if (p.length === 3) { ngaySanXuatFormatted = p[2] + '/' + p[1] + '/' + p[0]; } } catch (e) {}
+                    try { const p = item.ngay_san_xuat.split('-'); if (p.length === 3) { ngaySanXuatFormatted = p[2] + '/' + p[1] + '/' + p[0]; } } catch (e) { }
                 }
 
                 printHtml += `
@@ -2022,7 +2022,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="line"><div class="lbl">Manufacturing date:</div><div class="val">${ngaySanXuatFormatted}</div></div>
                 </div>`;
             });
-            
+
             if (pageItems.length < itemsPerPage) {
                 for (let j = 0; j < (itemsPerPage - pageItems.length); j++) {
                     printHtml += '<div class="label-small empty"></div>';
