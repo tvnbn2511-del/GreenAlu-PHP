@@ -225,8 +225,8 @@
             </div>
             
             <div class="modal-form-group" style="flex: 1;">
-                <label for="modal-kien-le-input" style="color: #d9534f; font-weight: bold;">Khối lượng Kiện Lẻ (Kg):</label>
-                <input type="number" id="modal-kien-le-input" step="0.01" min="0" placeholder="Nhập nếu có kiện lẻ">
+                <label for="modal-po-number-input" style="color: #007bff; font-weight: bold;">PO Number:</label>
+                <input type="text" id="modal-po-number-input" placeholder="Nhập PO Number (nếu có)">
             </div>
         </div>
 

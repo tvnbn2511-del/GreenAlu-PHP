@@ -560,12 +560,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // B. RESET TRẠNG THÁI (Quan trọng: Xóa chế độ Ghép Kiện)
             const inputMode = document.getElementById('nhap-hang-mode');
             const inputOldIds = document.getElementById('ghep-kien-old-ids');
-            const inputKienLe = document.getElementById('modal-kien-le-input');
+            const inputPoNumber = document.getElementById('modal-po-number-input');
             const modalTitle = document.getElementById('modal-nhaphang-title');
 
             if (inputMode) inputMode.value = 'nhap_hang'; // Đặt về nhập hàng
             if (inputOldIds) inputOldIds.value = '';       // Xóa ID cũ
-            if (inputKienLe) inputKienLe.value = '';       // Reset ô kiện lẻ
+            if (inputPoNumber) inputPoNumber.value = '';   // Reset ô PO Number
             if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-weight-hanging"></i> Nhập Khối Lượng & Thành Phần';
 
             // C. XỬ LÝ CÁC TRƯỜNG HỢP HIỂN THỊ
@@ -664,12 +664,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // C. CÀI ĐẶT TRẠNG THÁI "GHÉP KIỆN"
             const inputMode = document.getElementById('nhap-hang-mode');
             const inputOldIds = document.getElementById('ghep-kien-old-ids');
-            const inputKienLe = document.getElementById('modal-kien-le-input');
+            const inputPoNumber = document.getElementById('modal-po-number-input');
             const modalTitle = document.getElementById('modal-nhaphang-title');
 
             if (inputMode) inputMode.value = 'ghep_kien'; // Đặt chế độ ghép
             if (inputOldIds) inputOldIds.value = JSON.stringify(selectedIds); // Lưu danh sách ID cũ
-            if (inputKienLe) inputKienLe.value = ''; // Reset kiện lẻ
+            if (inputPoNumber) inputPoNumber.value = ''; // Reset PO Number
             if (modalTitle) modalTitle.innerHTML = `<i class="fas fa-random"></i> Ghép ${selectedIds.length} kiện cũ thành Lô Mới`;
 
             // D. Hiển thị thông tin Lô Mới lên Modal
@@ -760,22 +760,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
 
-                // 2. Thu thập Kiện Lẻ (Logic Đảo Thông Tin)
-                const inputKienLe = document.getElementById('modal-kien-le-input');
-                if (inputKienLe && inputKienLe.value) {
-                    const klKienLe = parseFloat(inputKienLe.value);
-                    if (klKienLe > 0) {
-                        dsKhoiLuong.push({
-                            khoi_luong: klKienLe,
-                            override_lot_no: 'Kiện Lẻ',  // Ghi đè Lot No thành 'Kiện Lẻ'
-                            override_kien_so: lotnoMain  // Ghi đè Kiện số thành tên Lot No chính
-                        });
-                    }
-                }
-
+                // 2. Thu thập PO Number
+                const inputPoNumber = document.getElementById('modal-po-number-input');
+                const poNumberVal = inputPoNumber ? inputPoNumber.value.trim() : '';
+                
                 if (!isValid) return;
                 if (dsKhoiLuong.length === 0) {
-                    showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng hoặc kiện lẻ.', 'error');
+                    showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng.', 'error');
                     return;
                 }
 
@@ -788,6 +779,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     formData.append('action', 'nhap_hang');
                 }
 
+                formData.append('po_number', poNumberVal); // Truyền lên PO Number
                 formData.append('loai_nhom_id', loainhomId);
                 formData.append('loai_hang_id', loaihangId);
                 formData.append('nsx', nsx);

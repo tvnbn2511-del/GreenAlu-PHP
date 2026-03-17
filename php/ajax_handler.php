@@ -286,6 +286,7 @@ try {
         $nsx_input = isset($_POST['nsx']) ? trim($_POST['nsx']) : '';
         $ds_khoi_luong = json_decode($_POST['ds_khoi_luong'] ?? '[]', true);
         $thanh_phan = json_decode($_POST['thanh_phan'] ?? '{}', true);
+        $po_number = isset($_POST['po_number']) ? trim($_POST['po_number']) : '';
 
         // Validate cơ bản
         if (empty($lotno) || empty($loai_nhom_id_input) || empty($loai_hang_id_input) || empty($nsx_input)) {
@@ -315,6 +316,15 @@ try {
             $stmt_tp->bind_param("sddddddddddddd", $lotno, $si, $fe, $cu, $mn, $mg, $zn, $pb, $ni, $cr, $sn, $ti, $cd, $ca);
             $stmt_tp->execute();
             $stmt_tp->close();
+
+            // 1.5 Lưu PO Number
+            if (!empty($po_number)) {
+                $sql_po = "INSERT INTO POnumber (lot_no, po_number) VALUES (?, ?) ON DUPLICATE KEY UPDATE po_number = VALUES(po_number)";
+                $stmt_po = $conn->prepare($sql_po);
+                $stmt_po->bind_param("ss", $lotno, $po_number);
+                $stmt_po->execute();
+                $stmt_po->close();
+            }
 
             // 2. Lưu Kiện Hàng (Xử lý Override cho Kiện Lẻ)
             $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho, kho_id) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW(), ?)");
@@ -358,6 +368,7 @@ try {
         $nsx_input = isset($_POST['nsx']) ? trim($_POST['nsx']) : '';
         $ds_khoi_luong = json_decode($_POST['ds_khoi_luong'] ?? '[]', true);
         $thanh_phan = json_decode($_POST['thanh_phan'] ?? '{}', true);
+        $po_number = isset($_POST['po_number']) ? trim($_POST['po_number']) : '';
 
         // Validate
         if (empty($old_ids)) { $response['message'] = 'Không có kiện hàng cũ nào được chọn để ghép.'; break; }
@@ -392,6 +403,15 @@ try {
             $stmt_tp->bind_param("sddddddddddddd", $lotno, $si, $fe, $cu, $mn, $mg, $zn, $pb, $ni, $cr, $sn, $ti, $cd, $ca);
             $stmt_tp->execute();
             $stmt_tp->close();
+
+            // Lưu PO Number
+            if (!empty($po_number)) {
+                $sql_po = "INSERT INTO POnumber (lot_no, po_number) VALUES (?, ?) ON DUPLICATE KEY UPDATE po_number = VALUES(po_number)";
+                $stmt_po = $conn->prepare($sql_po);
+                $stmt_po->bind_param("ss", $lotno, $po_number);
+                $stmt_po->execute();
+                $stmt_po->close();
+            }
 
             // Insert Kiện
             $stmt_insert = $conn->prepare("INSERT INTO kien_hang (lot_no, loai_nhom_id, loai_hang_id, kien_so, khoi_luong_kg, ngay_san_xuat, trang_thai, ngay_nhap_kho, kho_id) VALUES (?, ?, ?, ?, ?, ?, 'ton_kho', NOW(), ?)");
