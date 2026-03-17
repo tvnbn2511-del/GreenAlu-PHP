@@ -224,9 +224,9 @@
                 <input type="number" id="modal-kien-batdau-input" min="1" value="1" placeholder="Số thứ tự kiện đầu">
             </div>
             
-            <div class="modal-form-group" style="flex: 1;">
+            <div class="modal-form-group" style="flex: 2;">
                 <label for="modal-po-number-input" style="color: #007bff; font-weight: bold;">PO Number:</label>
-                <input type="text" id="modal-po-number-input" placeholder="Nhập PO Number (nếu có)">
+                <input type="text" id="modal-po-number-input" placeholder="Nhập PO Number (nếu có)" style="width: 100%; box-sizing: border-box; font-size: 1.1em; padding: 10px;">
             </div>
         </div>
 
