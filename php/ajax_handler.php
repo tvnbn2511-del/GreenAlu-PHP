@@ -116,6 +116,7 @@ try {
             $lotno = isset($_POST['lotno']) ? trim($_POST['lotno']) : '';
             $thanh_phan_json = isset($_POST['thanh_phan']) ? $_POST['thanh_phan'] : '{}';
             $thanh_phan = json_decode($thanh_phan_json, true);
+            $po_number = isset($_POST['po_number']) ? trim($_POST['po_number']) : '';
 
             if (empty($lotno)) {
                 $response['message'] = 'Lot No không được để trống.';
@@ -168,8 +169,19 @@ try {
                 }
                 $stmt_thanh_phan->close();
                 
+                // Lưu PO Number nếu có
+                if (!empty($po_number)) {
+                    $sql_po = "INSERT INTO POnumber (lot_no, po_number) VALUES (?, ?) ON DUPLICATE KEY UPDATE po_number = VALUES(po_number)";
+                    $stmt_po = $conn->prepare($sql_po);
+                    if ($stmt_po) {
+                        $stmt_po->bind_param("ss", $lotno, $po_number);
+                        $stmt_po->execute();
+                        $stmt_po->close();
+                    }
+                }
+
                 $conn->commit();
-                $response = ['success' => true, 'message' => 'Đã cập nhật thành phần hóa học cho Lot ' . htmlspecialchars($lotno) . '.'];
+                $response = ['success' => true, 'message' => 'Đã cập nhật thành phần/PO cho Lot ' . htmlspecialchars($lotno) . '.'];
 
             } catch (Exception $e) { 
                 $conn->rollback(); 
@@ -287,6 +299,7 @@ try {
         $ds_khoi_luong = json_decode($_POST['ds_khoi_luong'] ?? '[]', true);
         $thanh_phan = json_decode($_POST['thanh_phan'] ?? '{}', true);
         $po_number = isset($_POST['po_number']) ? trim($_POST['po_number']) : '';
+        error_log("nhap_hang POST data: " . print_r($_POST, true));
 
         // Validate cơ bản
         if (empty($lotno) || empty($loai_nhom_id_input) || empty($loai_hang_id_input) || empty($nsx_input)) {

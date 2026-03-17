@@ -735,6 +735,11 @@ document.addEventListener('DOMContentLoaded', function () {
             formData.append('lotno', lotnoMain);
             formData.append('thanh_phan', thanhPhanJson);
 
+            // Thu thập PO Number chung cho cả 2 chế độ
+            const inputPoNumber = document.getElementById('modal-po-number-input');
+            const poNumberVal = inputPoNumber ? inputPoNumber.value.trim() : '';
+            formData.append('po_number', poNumberVal);
+
             if (isCompositionOnly) {
                 if (!lotnoMain) { showCustomAlert('Vui lòng nhập Lot No.', 'error'); return; }
                 formData.append('action', 'luu_thanh_phan'); // Action riêng cho chỉ lưu thành phần
@@ -760,10 +765,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
 
-                // 2. Thu thập PO Number
-                const inputPoNumber = document.getElementById('modal-po-number-input');
-                const poNumberVal = inputPoNumber ? inputPoNumber.value.trim() : '';
-
                 if (!isValid) return;
                 if (dsKhoiLuong.length === 0) {
                     showCustomAlert('Vui lòng nhập khối lượng cho ít nhất 1 kiện hàng.', 'error');
@@ -779,7 +780,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     formData.append('action', 'nhap_hang');
                 }
 
-                formData.append('po_number', poNumberVal); // Truyền lên PO Number
                 formData.append('loai_nhom_id', loainhomId);
                 formData.append('loai_hang_id', loaihangId);
                 formData.append('nsx', nsx);
@@ -1897,7 +1897,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         .header-large-text h2 {
             margin: 0;
-            font-size: 22pt; /* Chữ to hơn */
+            font-size: 24pt; /* Chữ to hơn */
             font-weight: normal;
         }
         /* Content A4 to */
@@ -1907,14 +1907,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         .content-large .line {
             display: flex;
-            margin-bottom: 20px; /* Giảm dòng để khỏi bị tràn */
-            font-size: 26pt; /* Tăng cỡ chữ nội dung */
+            margin-bottom: 30px; /* Giảm dòng để khỏi bị tràn */
+            font-size: 28pt; /* Tăng cỡ chữ nội dung */
         }
         .content-large .line .lbl {
             width: 350px; /* Nhãn rộng thêm để vừa chữ to */
         }
         .content-large .line .val {
-            font-weight: normal;
+            font-weight: bold; /* Chữ đậm hơn theo yêu cầu */
         }
 
         /* Tem nhỏ */
@@ -1927,12 +1927,12 @@ document.addEventListener('DOMContentLoaded', function () {
             display: flex;
             flex-direction: column;
             font-size: 11pt; 
-            line-height: 1.4;
+            line-height: 1.6; /* Tăng khoảng cách dòng */
         }
         .header-small {
             display: flex;
             align-items: center;
-            margin-bottom: 3mm;
+            margin-bottom: 5mm; /* Tăng khoảng cách dưới header */
         }
         .header-small img {
             max-width: 50px;
@@ -1953,10 +1953,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         .label-small .line {
             display: flex;
-            margin-bottom: 2px;
+            margin-bottom: 4px; /* Tăng khoảng cách dòng */
         }
         .label-small .line .lbl {
             width: 150px;
+        }
+        .label-small .line .val {
+            font-weight: bold; /* Chữ đậm hơn theo yêu cầu */
         }
         .label-small.empty {
             border: none !important;
@@ -1982,8 +1985,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="line"><div class="lbl">PO Number:</div><div class="val">${item.po_number || ''}</div></div>
                     <div class="line"><div class="lbl">Model:</div><div class="val">${item.ten_loai_nhom || ''}</div></div>
                     <div class="line"><div class="lbl">Lotno:</div><div class="val">${item.lot_no || ''}</div></div>
-                    <div class="line"><div class="lbl">Net Weight :</div><div class="val">${netWeightStr}</div></div>
-                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Net Weight:</div><div class="val">${netWeightStr} Kg</div></div>
+                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr} Kg</div></div>
                     <div class="line"><div class="lbl">Quantity of ingot:</div><div class="val">${item.so_thoi || ''}</div></div>
                 </div>
             </div>`;
@@ -2016,8 +2019,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div class="line"><div class="lbl">Model:</div><div class="val">${item.ten_loai_nhom || ''}</div></div>
                     <div class="line"><div class="lbl">LotNo:</div><div class="val">${item.lot_no || ''}</div></div>
-                    <div class="line"><div class="lbl">Net Weight:</div><div class="val">${netWeightStr}</div></div>
-                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr}</div></div>
+                    <div class="line"><div class="lbl">Net Weight:</div><div class="val">${netWeightStr} Kg</div></div>
+                    <div class="line"><div class="lbl">Gross Weight:</div><div class="val">${grossWeightStr} Kg</div></div>
                     <div class="line"><div class="lbl">Quantity of ingot:</div><div class="val">${item.so_thoi || ''}</div></div>
                     <div class="line"><div class="lbl">Manufacturing date:</div><div class="val">${ngaySanXuatFormatted}</div></div>
                 </div>`;
